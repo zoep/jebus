@@ -13,6 +13,11 @@ abstraction = do { reservedOp "\\"
                  ; return (SAbs v t)
                  }
 
+fix = do { reservedOp "fix"
+         ; t <- expr
+         ; return (SFix t)
+         }
+
 variable = do { v <- identifier
               ; return (SId v)
               }
@@ -65,6 +70,7 @@ term = parens expr
        <|> numeral
        <|> nsucc
        <|> abstraction
+       <|> fix
        <|> variable
        
 expr = do

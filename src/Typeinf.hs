@@ -45,21 +45,17 @@ unify (Tvar a1) tau2
   | notOccurs a1 tau2 = Right (Sub a1 tau2)
   | otherwise =
     Left $ "Occurs check: cannot construct the infinite type: " ++ ppType tau2
-    ++ "=" ++ show (Tvar a1)
+    ++ "=" ++ ppType (Tvar a1)
 unify tau1 (Tvar a2)
   | notOccurs a2 tau1 = Right (Sub a2 tau1)
   | otherwise =
     Left $ "Occurs check: cannot construct the infinite type: " ++ ppType tau1
-    ++ "=" ++ show (Tvar a2)
+    ++ "=" ++ ppType (Tvar a2)
 unify (Arrow tau11 tau12) (Arrow tau21 tau22) =
-  let subst1 = unify tau11 tau21 in
-  case subst1 of
-    Right subst1 ->
-      let subst2 = unify (substType subst1 tau12) (substType subst1 tau22) in
-      case subst2 of
-        Right subst2 -> Right (Composition subst1 subst2)
-        Left str -> Left str
-    Left str -> Left str
+  do
+    subst1 <- unify tau11 tau21
+    subst2 <- unify (substType subst1 tau12) (substType subst1 tau22)
+    return $ Composition subst1 subst2
 unify tau1 tau2 =
   Left $ "Could not match type " ++ ppType tau1 ++ " with type " ++ ppType tau2
 

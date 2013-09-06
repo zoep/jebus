@@ -9,7 +9,7 @@ def = haskellDef{ T.reservedOpNames = ["\\", ".", "="]
                 , T.reservedNames = ["let", "in", "true",
                                      "false", "if", "then",
                                      "else", "succ", "pred",
-                                     "iszero"]
+                                     "iszero", "fix"]
                 }
 
 lexer :: TokenParser ()

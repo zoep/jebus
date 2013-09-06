@@ -39,6 +39,7 @@ data TypeSubst = Id
 
 -- Datatype for the sugared AST
 data STerm = SAbs String STerm
+           | SFix STerm
            | SApp STerm STerm
            | SId String
            | IfThenElse STerm STerm STerm
@@ -50,6 +51,7 @@ data STerm = SAbs String STerm
            deriving (Show, Eq) 
 
 data TypedSTerm = TAbs (String, Type) (TypedSTerm, Type)
+                | TFix TypedSTerm
                 | TApp TypedSTerm TypedSTerm
                 | TId String
                 | TIfThenElse TypedSTerm TypedSTerm TypedSTerm
@@ -66,8 +68,8 @@ ppTTerm term = PP.render (aux term 0 0)
         aux (TId x) _ _ = PP.text x
         aux (TAbs (x, t1) (e, t2)) n c = PP.nest n $
           (if c > 0 then parens else id)
-          (PP.parens ((PP.text ("\\" ++ x ++ " : " ++ ppType t1 ++ " . ")) <>
-                      (aux e n 0)) <> (PP.text (" : " ++ ppType t2)))
+          ((PP.text ("\\" ++ x ++ " : " ++ ppType t1 ++ " . ")) <>
+           (aux e n 0))
         aux (TApp e1 e2) n c = PP.nest n $
           (if c > 1 then PP.parens else id)
           (aux e1 n 1 <+> aux e2 n 2)
@@ -84,12 +86,14 @@ ppTTerm term = PP.render (aux term 0 0)
           aux e2 (n+1) c
         aux TIsZero _ _ = PP.text "iszero"
         aux TSucc _ _ = PP.text "succ"
+        aux (TFix e) n c = PP.nest n $ parens (PP.text "fix" <+> aux e n c) 
         boolean True = text "true"
         boolean False = text "false"
         
     
 -- Datatype for the desugared AST
 data Term = Abs String Term
+          | Fix Term
           | App Term Term
           | Ident String 
           deriving Eq
@@ -105,7 +109,9 @@ ppTerm term = PP.render $ aux term 0
     aux (App e1 e2) c = 
       (if c > 1 then PP.parens else id)
       (aux e1 1 <+> aux e2 2)
-      
+    aux (Fix e) c = PP.parens $
+      PP.text "fix" <+> aux e c
+    
 data Node = Node {
   nodeExpr  :: Term,
   tExpr     :: TypedSTerm,

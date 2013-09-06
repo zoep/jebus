@@ -39,6 +39,17 @@ walk (SAbs id term) env pool =
       typ = tau 
       }
 
+walk (SFix term) env p =
+  do
+    let (a, p') = T.fresh p  -- maybe returning (Tvar a) is a better design choice
+    node <- walk term env p'
+    sub <- T.unify (typ node) (Arrow (Tvar a) (Tvar a))
+    return $ node {
+      nodeExpr = Fix (nodeExpr node),
+      tExpr = TFix (tExpr node),
+      typ = T.substType sub (Tvar a)
+      }
+
 walk (SApp term1 term2) env p =
   do 
     let (a, p') = T.fresh p

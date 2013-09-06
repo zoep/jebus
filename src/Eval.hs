@@ -10,6 +10,7 @@ isFreeIn id (App e1 e2) = (isFreeIn id e1) || (isFreeIn id e2)
 isFreeIn id (Abs x e) 
   | id == x = False
   | otherwise = isFreeIn id e
+isFreeIn id (Fix e) = isFreeIn id e
   
 -- Concatenates an identifier with the next available number
 
@@ -34,6 +35,10 @@ substitute (id, e1) (Abs x e2) fresh
   | otherwise = 
      let (t, fresh') = substitute (id, e1) e2 fresh in
        (Abs x t, fresh')
+substitute (id, e1) (Fix e2) fresh =
+  let (e2', fresh') = substitute (id, e1) e2 fresh in
+    (Fix e2', fresh')
+
 
 isValueBV (Abs _ _) = True
 isValueBV (App _ _) = False
@@ -55,6 +60,7 @@ evalByVal _ _ =
 isValueN (Abs id e) = isValueN e
 isValueN (Ident _) = True
 isValueN (App (Abs _ _) e2) = False
+isValueN (Fix e) = False --isValueN e
 isValueN (App e1 e2) = (isValueN e1) && (isValueN e2)
 
 evalNormal :: Term -> FreshPool -> Either String (Term, FreshPool)
@@ -75,6 +81,12 @@ evalNormal (App e1 e2) fresh =
     do
       (e1', fresh') <- evalNormal e1 fresh
       return (App e1' e2, fresh')
+evalNormal (Fix (Abs id e)) fresh =
+  return $ substitute (id, Fix (Abs id e)) e fresh
+evalNormal (Fix e) fresh =
+  do
+    (e', fresh') <- evalNormal e fresh
+    return (Fix e', fresh')
 evalNormal _ _ =
   Left "Serious Internal Error 2"
 
