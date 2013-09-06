@@ -1,9 +1,15 @@
 module Types where
 import Text.PrettyPrint as PP
+import Control.Monad.Instances
 
 type TypeVar = Int 
 
 type FreshPool = [TypeVar]
+{-
+instance Monad (Either e) where
+        return = Right
+        Right m >>= k = k m
+        Left e  >>= _ = Left e-}
 
 data Type = Arrow Type Type
           | Nat
