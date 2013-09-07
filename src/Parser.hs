@@ -13,11 +13,6 @@ abstraction = do { reservedOp "\\"
                  ; return (SAbs v t)
                  }
 
-fix = do { reservedOp "fix"
-         ; t <- expr
-         ; return (SFix t)
-         }
-
 variable = do { v <- identifier
               ; return (SId v)
               }
@@ -60,8 +55,18 @@ letin = do { reserved "let"
            ; return (LetIn v e1 e2)
            }
 
+letrecin = do { reserved "let"
+              ; reserved "rec"
+              ; v <- identifier
+              ; reservedOp "="
+              ; e1 <- expr
+              ; reserved "in"
+              ; e2 <- expr
+              ; return (LetRec v e1 e2)
+              }
   
 term = parens expr
+       <|> letrecin
        <|> letin
        <|> constFalse
        <|> constTrue
@@ -70,7 +75,6 @@ term = parens expr
        <|> numeral
        <|> nsucc
        <|> abstraction
-       <|> fix
        <|> variable
        
 expr = do

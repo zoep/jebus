@@ -39,6 +39,7 @@ walk (SAbs id term) env pool =
       typ = tau 
       }
 
+{-
 walk (SFix term) env p =
   do
     let (a, p') = T.fresh p  -- maybe returning (Tvar a) is a better design choice
@@ -49,7 +50,7 @@ walk (SFix term) env p =
       tExpr = TFix (tExpr node),
       typ = T.substType sub (Tvar a)
       }
-
+-}
 walk (SApp term1 term2) env p =
   do 
     let (a, p') = T.fresh p
@@ -73,6 +74,20 @@ walk (LetIn id term1 term2) env p =
       tExpr = TLetIn (id, (typ node1)) (tExpr node1) (tExpr node2),
       subst = Composition (subst node2) (subst node1)
       }
+
+walk (LetRec id term1 term2) env p =
+  do
+    let (a, p') = T.fresh p
+    node1 <- walk term1 ((SId id, SimpleType (Tvar a)) : env) p'
+    sub <- T.unify (T.substType (subst node1) (Tvar a)) (typ node1)
+    let env' = T.substEnv (Composition (sub) (subst node1)) env
+    node2 <- walk term2 ((SId id, T.gen env' (T.substType sub (typ node1))) : env') (pool node1)
+    return $ node2 {
+      nodeExpr =  App (Abs id (nodeExpr node2)) (Fix (Abs id (nodeExpr node1))),
+      tExpr = TLetRec (id, T.substType sub (typ node1)) (tExpr node1) (tExpr node2),
+      subst = Composition (subst node2) (Composition sub (subst node1))
+    }
+    
 
 walk (Num n) env p =
   do

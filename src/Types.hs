@@ -39,13 +39,13 @@ data TypeSubst = Id
 
 -- Datatype for the sugared AST
 data STerm = SAbs String STerm
-           | SFix STerm
            | SApp STerm STerm
            | SId String
            | IfThenElse STerm STerm STerm
            | Num Integer
            | Boolean Bool
            | LetIn String STerm STerm
+           | LetRec String STerm STerm
            | IsZero
            | Succ
            deriving (Show, Eq) 
@@ -58,6 +58,7 @@ data TypedSTerm = TAbs (String, Type) (TypedSTerm, Type)
                 | TNum Integer
                 | TBoolean Bool
                 | TLetIn (String, Type) TypedSTerm TypedSTerm
+                | TLetRec (String, Type) TypedSTerm TypedSTerm
                 | TIsZero
                 | TSucc
                 deriving Eq
@@ -84,9 +85,14 @@ ppTTerm term = PP.render (aux term 0 0)
           aux e1 (n+1) c $$
           PP.text "in" $$
           aux e2 (n+1) c
+        aux (TLetRec (id, t) e1 e2) n c = PP.nest n $
+          PP.text ("let rec " ++ id ++ " : " ++ ppType t ++ "=") $+$
+          aux e1 (n+1) c $$
+          PP.text "in" $$
+          aux e2 (n+1) c
         aux TIsZero _ _ = PP.text "iszero"
         aux TSucc _ _ = PP.text "succ"
-        aux (TFix e) n c = PP.nest n $ parens (PP.text "fix" <+> aux e n c) 
+        --aux (TFix e) n c = PP.nest n $ parens (PP.text "fix" <+> aux e n c) 
         boolean True = text "true"
         boolean False = text "false"
         
