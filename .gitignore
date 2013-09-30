@@ -5,7 +5,9 @@ cabal-dev
 *.chi
 *.chs.h
 .virthualenv
-main
+jebus
 *~
 *.swp
 *.*.swp
+[#]*[#]
+*~

@@ -1,0 +1,3 @@
+let a = [1, 2] in
+let mapt = \f. \t. [f (fst t), f (snd t)] in
+  mapt succ a

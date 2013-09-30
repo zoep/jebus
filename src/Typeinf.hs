@@ -56,6 +56,11 @@ unify (Arrow tau11 tau12) (Arrow tau21 tau22) =
     subst1 <- unify tau11 tau21
     subst2 <- unify (substType subst1 tau12) (substType subst1 tau22)
     return $ Composition subst1 subst2
+unify (Pair tau11 tau12) (Pair tau21 tau22) =
+   do
+    subst1 <- unify tau11 tau21
+    subst2 <- unify (substType subst1 tau12) (substType subst1 tau22)
+    return $ Composition subst1 subst2 
 unify tau1 tau2 =
   Left $ "Could not match type " ++ ppType tau1 ++ " with type " ++ ppType tau2
 

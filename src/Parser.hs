@@ -1,90 +1,108 @@
 module Parser where
 
-import Text.Parsec
+import Text.Parsec as Parsec
 import Text.Parsec.String
 import Text.Parsec.Expr
 import Lexer
 import Types
 
-abstraction = do { reservedOp "\\"
-                 ; v <- identifier
-                 ; reservedOp "."
-                 ; t <- expr
-                 ; return (SAbs v t)
-                 }
+abstraction =
+  do
+    reservedOp "\\"
+    v <- identifier
+    reservedOp "."
+    t <- expr
+    return (SAbs v t)
+    
+variable = identifier >>= \v -> return (SId v)
+    
+ifthenelse =
+  do
+    reserved "if"
+    cond <- expr
+    reserved "then"
+    e1 <- expr
+    reserved "else"
+    e2 <- expr
+    return $ IfThenElse cond e1 e2
+                 
+constTrue = reserved "true" >> return (Boolean True)
+                
+constFalse = reserved "false" >> return (Boolean False)
 
-variable = do { v <- identifier
-              ; return (SId v)
-              }
 
-ifthenelse = do { reserved "if"
-                ; cond <- expr
-                ; reserved "then"
-                ; e1 <- expr
-                ; reserved "else"
-                ; e2 <- expr
-                ; return (IfThenElse cond e1 e2)
-                }
-             
-constTrue = do { reserved "true"
-               ; return (Boolean True) 
-               }
-            
-constFalse = do { reserved "false"
-                ; return (Boolean False)
-                }
+--iszero = reserved "iszero" >> return IsZero
 
-iszero = do { reserved "iszero"
-            ; return IsZero
-            }
+numeral = natural >>= \n -> return (Num n)
 
-numeral = do { v <- natural
-             ; return (Num v)
-             }
+{-
+nsucc = reserved "succ" >> return Succ
 
-nsucc = do { reserved "succ"
-           ; return Succ
-           }
-
-letin = do { reserved "let"
-           ; v <- identifier
-           ; reservedOp "="
-           ; e1 <- expr
-           ; reserved "in"
-           ; e2 <- expr
-           ; return (LetIn v e1 e2)
-           }
-
-letrecin = do { reserved "let"
-              ; reserved "rec"
-              ; v <- identifier
-              ; reservedOp "="
-              ; e1 <- expr
-              ; reserved "in"
-              ; e2 <- expr
-              ; return (LetRec v e1 e2)
-              }
+prev = reserved "pred" >> return Pred
+          
+first = reserved "fst" >> return Fst
   
+second = reserved "snd" >> return Snd
+-}
+
+inpair =
+  do
+    e1 <- expr
+    comma
+    e2 <- expr
+    return $ SPair e1 e2
+            
+pair = brackets inpair
+
+letin =
+  do
+    reserved "let"
+    v <- identifier
+    reservedOp "="
+    e1 <- expr
+    reserved "in"
+    e2 <- expr
+    return $ LetIn v e1 e2
+    
+letrecin =
+  do
+    reserved "let rec"
+    v <- identifier
+    reservedOp "="
+    e1 <- expr
+    reserved "in"
+    e2 <- expr
+    return (LetRec v e1 e2)
+
 term = parens expr
        <|> letrecin
        <|> letin
        <|> constFalse
        <|> constTrue
        <|> ifthenelse
-       <|> iszero
        <|> numeral
-       <|> nsucc
+       <|> pair
        <|> abstraction
        <|> variable
        
-expr = do
-  exprlst <- many1 term
-  return (foldl1 SApp exprlst)
+oper = buildExpressionParser table term
+  where op x f = Infix (reservedOp x >> return f)
+        table = [[op "**" Pow AssocRight],
+                 [op "*" Mult AssocLeft ],
+                 [op "+" Plus AssocLeft,
+                  op "-" Minus AssocLeft]]
 
-program p = do
-  whiteSpace
-  r <- p
-  eof
-  return r
 
-run p input = parse (program p) "" input
+expr =
+  do
+    exprlst <- many1 oper
+    return (foldl1 SApp exprlst)
+
+program p =
+  do
+    whiteSpace
+    r <- p
+    eof
+    return r
+
+parse p input = Parsec.parse (program p) "" input
