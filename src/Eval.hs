@@ -1,5 +1,5 @@
 module Eval where
-
+import qualified Data.List as List
 import Types
 
 -- Checks if an identifier occurs free in a term
@@ -71,10 +71,10 @@ evalNormal (Abs id e1) fresh
       (e1', fresh') <- evalNormal e1 fresh
       return $ (Abs id e1', fresh')
 evalNormal (App (Abs id e1) e2) fresh =
-  return $ substitute (id, e2) e1 fresh
+  return $ substitute (id, e2) e1 fresh 
 evalNormal (App e1 e2) fresh =
   if (isValueN e1) then
-    do 
+    do
       (e2', fresh') <- evalNormal e2 fresh
       return (App e1 e2', fresh')
   else
@@ -87,15 +87,26 @@ evalNormal (Fix e) fresh =
   do
     (e', fresh') <- evalNormal e fresh
     return (Fix e', fresh')
-evalNormal _ _ =
-  Left "Serious Internal Error 2"
+evalNormal e1 _ =
+  Left $ "Serious error umatched " ++ ppTerm e1 
 
-interpret :: (Term -> FreshPool -> Either String (Term, FreshPool)) -> (Term -> Bool) -> Term -> FreshPool -> Either String Term
-interpret f value expr fresh
-  | value expr = return expr
+interpret :: (Term -> FreshPool -> Either String (Term, FreshPool)) ->
+             (Term -> Bool) -> Term -> FreshPool -> Either String Term
+interpret eval isValue expr fresh
+  | isValue expr = return expr
   | otherwise    = 
-      f expr fresh >>= \(expr', fresh') ->
-      interpret f value expr' fresh'
+      eval expr fresh >>= \(expr', fresh') ->
+      interpret eval isValue expr' fresh'
+
+
+interpretT :: [Term] -> (Term -> FreshPool -> Either String (Term, FreshPool)) ->
+             (Term -> Bool) -> Term -> FreshPool -> Either String [Term]
+interpretT acc eval isValue expr fresh
+  | isValue expr = return $ List.reverse (expr : acc)
+  | otherwise = 
+      eval expr fresh >>= \(expr', fresh') ->
+      interpretT (expr : acc) eval isValue expr' fresh'
 
 normalOrder term = interpret evalNormal isValueN term [1..]
 
+normalOrderT term = interpretT [] evalNormal isValueN term [1..]

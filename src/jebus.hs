@@ -2,18 +2,24 @@ import System.Console.GetOpt
 import System.Environment (getArgs)
 
 import qualified Parser as P
+import qualified Data.List as List
 import Ast
 import Types
 import Eval
 
-data Flag = TypeAnnot | Eval | Both | Help
+data Flag = TypeAnnot | Eval | Both | Help | Verbose
           deriving Show
+
+showSteps [t] = ppTerm t 
+showSteps (t : ts) = ppTerm t ++ " =>\n" ++ showSteps ts
+
 
 options :: [OptDescr Flag]
 options =
   [ Option ['a'] ["annot"] (NoArg TypeAnnot) "show the program with explicit types"
   , Option ['i'] ["interpret"] (NoArg Eval) "interpret the program"
   , Option ['b'] [] (NoArg Both) "show the program with explicit types then interpret"
+  , Option ['t'] ["trace"] (NoArg Verbose) "Show each reduction step"
   , Option ['h'] ["help"]  (NoArg Help) "help"
   ]
 
@@ -58,6 +64,17 @@ execute p flag =
                       putStrLn $  "---- Type Annotations ----\n" ++
                         ppTTerm (tExpr node) ++ "----- Value -----\n" ++
                         ppTerm term
+          Verbose ->
+            case infer ast of
+                Left str -> putStrLn str
+                Right node ->
+                  case normalOrderT (nodeExpr node) of
+                    Left str -> putStrLn str
+                    Right terms ->
+                      do
+                        let cnt = (List.length terms)-1
+                        putStrLn $ showSteps terms ++ "\nPerformed " ++ show cnt ++ " beta reductions."
+                  
           
 main =
   do

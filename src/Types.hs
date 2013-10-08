@@ -67,7 +67,7 @@ data TypedSTerm = TAbs (String, Type) (TypedSTerm, Type)
                 deriving Eq
 
 ppTTerm :: TypedSTerm -> String
-ppTTerm term = showWidth 30 $ aux term minprec
+ppTTerm term = showWidth 60 $ aux term minprec
   where
     showWidth :: Int -> Doc -> String
     showWidth w x   = PP.displayS (PP.renderPretty 0.4 w x) ""
@@ -108,8 +108,8 @@ ppTTerm term = showWidth 30 $ aux term minprec
     lam x typ e ex c =
       let c' = prec ex in
       (if (c' > c) then PP.parens else id) $
-      (PP.text ("\\" ++ x ++ " : " ++ ppType typ ++ " . ")) <>
-      (aux e c')
+      PP.nest 2 ((PP.text ("\\" ++ x ++ " : " ++ ppType typ ++ " . ")) </>
+      (aux e c'))
       
     left a op b e c =
       let c' = prec e in
