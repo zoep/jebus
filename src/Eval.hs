@@ -39,33 +39,44 @@ substitute (id, e1) (Fix e2) fresh =
   let (e2', fresh') = substitute (id, e1) e2 fresh in
     (Fix e2', fresh')
 
+isValue (Abs id e) = isValue e
+isValue (Ident _) = True
+isValue (App (Abs _ _) e2) = False
+isValue (Fix e) = False --isValue e
+isValue (App e1 e2) = (isValue e1) && (isValue e2)
 
-isValueBV (Abs _ _) = True
-isValueBV (App _ _) = False
 
-evalByVal :: Term -> FreshPool -> Either String (Term, FreshPool)
-evalByVal (App abs@(Abs id e1) e2) fresh
-  | isValueBV e2 = return (substitute (id, e2) e1 fresh) 
-  | otherwise  =
+evalApplicative :: Term -> FreshPool -> Either String (Term, FreshPool)
+evalApplicative e@(Abs id e1) fresh
+  | isValue e1 = Left $ "Serious internal error, umatched " ++ ppTerm e
+  | otherwise =
     do 
-      (e2', fresh') <- evalByVal e2 fresh
-      return (App abs e2', fresh')
-evalByVal (App e1 e2) fresh =
-    do 
-      (e1', fresh') <- evalByVal e2 fresh
+      (e1', fresh') <- evalApplicative e1 fresh
+      return $ (Abs id e1', fresh')
+evalApplicative (App e1 e2) fresh | not (isValue e1 && isValue e2) =
+  if (isValue e1) then
+    do
+      (e2', fresh') <- evalApplicative e2 fresh
+      return (App e1 e2', fresh')
+  else
+    do
+      (e1', fresh') <- evalApplicative e1 fresh
       return (App e1' e2, fresh')
-evalByVal _ _ =
-  Left "Serious Internal Error"
+evalApplicative (App (Abs id e1) e2) fresh =
+    return $ substitute (id, e2) e1 fresh
+evalApplicative (Fix (Abs id e)) fresh =
+  return $ substitute (id, Fix (Abs id e)) e fresh
+evalApplicative (Fix e) fresh =
+  do
+    (e', fresh') <- evalApplicative e fresh
+    return (Fix e', fresh')
+evalApplicative e1 _ =
+  Left $ "Serious internal error 2, umatched " ++ ppTerm e1 
 
-isValueN (Abs id e) = isValueN e
-isValueN (Ident _) = True
-isValueN (App (Abs _ _) e2) = False
-isValueN (Fix e) = False --isValueN e
-isValueN (App e1 e2) = (isValueN e1) && (isValueN e2)
 
 evalNormal :: Term -> FreshPool -> Either String (Term, FreshPool)
-evalNormal (Abs id e1) fresh
-  | isValueN e1 = Left "Serious internal error 1"
+evalNormal e@(Abs id e1) fresh
+  | isValue e1 = Left $ "Serious internal error 1, umatched " ++ ppTerm e
   | otherwise =
     do 
       (e1', fresh') <- evalNormal e1 fresh
@@ -73,7 +84,7 @@ evalNormal (Abs id e1) fresh
 evalNormal (App (Abs id e1) e2) fresh =
   return $ substitute (id, e2) e1 fresh 
 evalNormal (App e1 e2) fresh =
-  if (isValueN e1) then
+  if (isValue e1) then
     do
       (e2', fresh') <- evalNormal e2 fresh
       return (App e1 e2', fresh')
@@ -88,7 +99,7 @@ evalNormal (Fix e) fresh =
     (e', fresh') <- evalNormal e fresh
     return (Fix e', fresh')
 evalNormal e1 _ =
-  Left $ "Serious error umatched " ++ ppTerm e1 
+  Left $ "Serious internal error 2, umatched " ++ ppTerm e1 
 
 interpret :: (Term -> FreshPool -> Either String (Term, FreshPool)) ->
              (Term -> Bool) -> Term -> FreshPool -> Either String Term
@@ -107,6 +118,10 @@ interpretT acc eval isValue expr fresh
       eval expr fresh >>= \(expr', fresh') ->
       interpretT (expr : acc) eval isValue expr' fresh'
 
-normalOrder term = interpret evalNormal isValueN term [1..]
+normalOrder term = interpret evalNormal isValue term [1..]
 
-normalOrderT term = interpretT [] evalNormal isValueN term [1..]
+normalOrderT term = interpretT [] evalNormal isValue term [1..]
+
+applicativeOrder term = interpret evalApplicative isValue term [1..]
+
+applicativeOrderT term = interpretT [] evalApplicative isValue term [1..]

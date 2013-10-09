@@ -1,88 +1,110 @@
-import System.Console.GetOpt
-import System.Environment (getArgs)
+{-# LANGUAGE DeriveDataTypeable, RecordWildCards #-}
+
+import System.Console.CmdArgs hiding (Normal)
+import System.Environment (getArgs, withArgs)
 
 import qualified Parser as P
 import qualified Data.List as List
-import Ast
-import Types
-import Eval
+import qualified Ast
+import qualified Types
+import qualified Eval
 
-data Flag = TypeAnnot | Eval | Both | Help | Verbose
-          deriving Show
+-- based on the excellent tutorial :
+-- http://zuttobenkyou.wordpress.com/2011/04/19/haskell-using-cmdargs-single-and-multi-mode/
 
-showSteps [t] = ppTerm t 
-showSteps (t : ts) = ppTerm t ++ " =>\n" ++ showSteps ts
+data EvalMode = Normal | Applicative
+              deriving (Data, Typeable, Show, Eq)
+
+data Options =
+    Annot
+  | Eval
+    { trace     :: Bool
+    , eval      :: EvalMode
+    }
+  deriving (Data, Typeable, Show, Eq)
+
+annot :: Options
+annot = Annot
+        &= details ["Print an explicitly typed version of the program"]
+        
+interpret :: Options
+interpret = Eval
+       { trace = False &= help "show each beta reduction"
+       , eval  = Normal &= help "specify evaluation strategy: normal (default) or applicative" 
+       }
+       &= details ["Interpret the program"]
+       
+jebusModes :: Mode (CmdArgs Options)
+jebusModes = cmdArgsMode $ modes [annot, interpret]
+  &= summary (_PROGRAM_INFO ++ ", " ++ _AUTHORS)
+  &= help _PROGRAM_ABOUT
+  &= helpArg [explicit, name "help", name "h"]
+  &= program _PROGRAM_NAME
+
+_PROGRAM_NAME = "jebus"
+_PROGRAM_VERSION = "0.1"
+_PROGRAM_INFO = _PROGRAM_NAME ++ " version " ++ _PROGRAM_VERSION
+_PROGRAM_ABOUT = "Yet another lambda calculus interpreter"
+_AUTHORS = "Zoe Paraskevopoulou, Nick Giannarakis 2013"
+
+main :: IO ()
+main = do
+    args <- getArgs
+    opts <- (if null args then withArgs ["--help"] else id) $
+            cmdArgsRun jebusModes
+    optionHandler opts
+
+optionHandler :: Options -> IO ()
+optionHandler opts@Annot{..}  = do
+  p <- getContents
+  annotProg p 
+optionHandler opts@Eval{..}  = do
+  p <- getContents
+  interProg p eval trace
 
 
-options :: [OptDescr Flag]
-options =
-  [ Option ['a'] ["annot"] (NoArg TypeAnnot) "show the program with explicit types"
-  , Option ['i'] ["interpret"] (NoArg Eval) "interpret the program"
-  , Option ['b'] [] (NoArg Both) "show the program with explicit types then interpret"
-  , Option ['t'] ["trace"] (NoArg Verbose) "Show each reduction step"
-  , Option ['h'] ["help"]  (NoArg Help) "help"
-  ]
 
-header = "Usage: jebus OPTION"
+showSteps [t] = Types.ppTerm t 
+showSteps (t : ts) = Types.ppTerm t ++ " =>\n" ++ showSteps ts
 
-jebusOpts :: [String] -> IO Flag
-jebusOpts argv = 
-  case getOpt RequireOrder options argv of
-    ([flag], [], []) -> return flag
-    (_,_,errs) -> ioError (userError (concat errs ++ usageInfo header options))
+annotProg p =
+  case (P.parse P.expr p) of
+    Left str ->
+      do
+        putStr "parse error at "
+        print str
+    Right ast ->
+      case Ast.infer ast of
+        Left str -> putStrLn str
+        Right node -> putStrLn $ Types.ppTTerm (Types.tExpr node)  
 
-
-execute p flag =
-  do
-    case (P.parse P.expr p) of
-      Left str ->
-        do
-          putStr "parse error at "
-          print str
-      Right ast ->
-        case flag of
-          TypeAnnot ->
-              case infer ast of
-                Left str -> putStrLn str
-                Right node -> putStrLn $ ppTTerm (tExpr node)
-          Eval ->
-              case infer ast of
-                Left str -> putStrLn str
-                Right node ->
-                  case normalOrder (nodeExpr node) of
-                    Left str -> putStrLn str
-                    Right term -> putStrLn $  ppTerm term
-                  
-          Both ->
+interProg p eval trace =
+  case (P.parse P.expr p) of
+    Left str ->
+      do
+        putStr "parse error at "
+        print str
+    Right ast ->
+      case Ast.infer ast of
+        Left str -> putStrLn str
+        Right node ->
+          if (trace) then
             do
-              case infer ast of
+              let f = case eval of
+                    Normal -> Eval.normalOrderT
+                    Applicative -> Eval.applicativeOrderT
+              case f (Types.nodeExpr node) of
                 Left str -> putStrLn str
-                Right node ->
-                  case normalOrder (nodeExpr node) of
-                    Left str -> putStrLn str
-                    Right term ->
-                      putStrLn $  "---- Type Annotations ----\n" ++
-                        ppTTerm (tExpr node) ++ "----- Value -----\n" ++
-                        ppTerm term
-          Verbose ->
-            case infer ast of
+                Right terms ->
+                  do
+                    let cnt = (List.length terms)-1
+                    putStrLn $ showSteps terms ++ "\nPerformed " ++
+                      show cnt ++ " beta reductions."
+          else
+            do
+              let f = case eval of
+                    Normal -> Eval.normalOrder
+                    Applicative -> Eval.applicativeOrder
+              case f (Types.nodeExpr node) of
                 Left str -> putStrLn str
-                Right node ->
-                  case normalOrderT (nodeExpr node) of
-                    Left str -> putStrLn str
-                    Right terms ->
-                      do
-                        let cnt = (List.length terms)-1
-                        putStrLn $ showSteps terms ++ "\nPerformed " ++ show cnt ++ " beta reductions."
-                  
-          
-main =
-  do
-    opt <- getArgs
-    flag <- jebusOpts opt
-    case flag of
-      Help -> putStr $ usageInfo header options
-      _ -> 
-        do
-          p <- getContents
-          execute p flag
+                Right term -> putStrLn $ Types.ppTerm term
