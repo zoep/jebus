@@ -111,7 +111,7 @@ interpret eval isValue expr fresh
 
 
 interpretT :: [Term] -> (Term -> FreshPool -> Either String (Term, FreshPool)) ->
-             (Term -> Bool) -> Term -> FreshPool -> Either String [Term]
+              (Term -> Bool) -> Term -> FreshPool -> Either String [Term]
 interpretT acc eval isValue expr fresh
   | isValue expr = return $ List.reverse (expr : acc)
   | otherwise = 

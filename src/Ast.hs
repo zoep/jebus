@@ -58,6 +58,10 @@ power :: Term -> Term -> Term
 power x y = 
   App (App (Abs "x" (Abs "y" (App (Ident "y") (Ident "x")))) x) y
 
+applyBop Plus = add
+applyBop Minus = Ast.subtract
+applyBop Mult = multiply
+applyBop Pow = power
 
 -- a list containing lambda definitions and types for library functions
 
@@ -126,19 +130,6 @@ walk (SAbs id term) env pool =
       typ = tau 
       }
 
-{-
-walk (SFix term) env p =
-  do
-    let (a, p') = T.fresh p  -- maybe returning (Tvar a) is a better design choice
-    node <- walk term env p'
-    sub <- T.unify (typ node) (Arrow (Tvar a) (Tvar a))
-    return $ node {
-      nodeExpr = Fix (nodeExpr node),
-      tExpr = TFix (tExpr node),
-      typ = T.substType sub (Tvar a)
-      }
--}
-
 walk (SApp term1 term2) env p =
   do 
     let (a, p') = T.fresh p
@@ -176,7 +167,7 @@ walk (LetRec id term1 term2) env p =
       subst = Composition (subst node2) (Composition sub (subst node1))
     }
  
-walk (Plus term1 term2) env p = 
+walk (Bop bop term1 term2) env p = 
   do
     node1 <- walk term1 env p
     node2 <- walk term2 env (pool node1)
@@ -184,54 +175,11 @@ walk (Plus term1 term2) env p =
     sub2 <- T.unify Nat (T.substType sub1 (typ node2))
     let sub = Composition sub2 sub1
     return $ node2 {
-      nodeExpr = add (nodeExpr node1) (nodeExpr node2),
-      tExpr = TPlus (tExpr node1) (tExpr node2),
+      nodeExpr = applyBop bop (nodeExpr node1) (nodeExpr node2),
+      tExpr = TBop bop (tExpr node1) (tExpr node2),
       typ = Nat,
       subst = sub
       }
-
-walk (Minus term1 term2) env p = 
-  do
-    node1 <- walk term1 env p
-    node2 <- walk term2 env (pool node1)
-    sub1 <- T.unify Nat (typ node1)
-    sub2 <- T.unify Nat (T.substType sub1 (typ node2))
-    let sub = Composition sub2 sub1
-    return $ node2 {
-      nodeExpr = Ast.subtract (nodeExpr node1) (nodeExpr node2),
-      tExpr = TMinus (tExpr node1) (tExpr node2),
-      typ = Nat,
-      subst = Composition (subst node2) (Composition sub (subst node1))
-      }
-
-walk (Mult term1 term2) env p =
-  do
-    node1 <- walk term1 env p
-    node2 <- walk term2 env (pool node1)
-    sub1 <- T.unify Nat (typ node1)
-    sub2 <- T.unify Nat (T.substType sub1 (typ node2))
-    let sub = Composition sub2 sub1
-    return $ node2 {
-      nodeExpr = multiply (nodeExpr node1) (nodeExpr node2),
-      tExpr = TMult (tExpr node1) (tExpr node2),
-      typ = Nat,
-      subst = Composition (subst node2) (Composition sub (subst node1))
-      }
-
-walk (Pow term1 term2) env p = 
-  do
-    node1 <- walk term1 env p
-    node2 <- walk term2 env (pool node1)
-    sub1 <- T.unify Nat (typ node1)
-    sub2 <- T.unify Nat (T.substType sub1 (typ node2))
-    let sub = Composition sub2 sub1 
-    return $ node2 {
-      nodeExpr = power (nodeExpr node1) (nodeExpr node2),
-      tExpr = TPow (tExpr node1) (tExpr node2),
-      typ = Nat,
-      subst = Composition (subst node2) (Composition sub (subst node1))
-    }
-    
 
 walk (SPair term1 term2) env p =
   do
@@ -262,27 +210,6 @@ walk (Boolean bool) env p =
     subst = Id,
     pool = p
     }
-
-{-
-walk IsZero env p =
-  Right $ Node {
-    nodeExpr = Abs "n" (App (App (Ident "n") (Abs "x" (boolToChurch False))) (boolToChurch True)),
-    tExpr = TIsZero,
-    typ = Arrow Nat Bool,
-    subst = Id,
-    pool = p
-    }
-
-walk Succ env p =
-  Right $ Node {
-    nodeExpr = Abs "n" (Abs "s" (Abs "z" (App (Ident "s") (App (App (Ident "n") (Ident "s")) (Ident "z"))))) ,
-    tExpr = TSucc,
-    typ = Arrow Nat Nat,
-    subst = Id,
-    pool = p
-    }
--}
-
 
 walk (IfThenElse cond term1 term2) env p = 
   do

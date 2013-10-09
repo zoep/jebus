@@ -35,6 +35,14 @@ data TypeSubst = Id
                | Sub TypeVar Type
                | Composition TypeSubst TypeSubst
 
+
+-- Binary operators
+data Bop = Plus
+         | Mult
+         | Minus
+         | Pow
+         deriving (Eq, Show)
+                  
 -- Datatype for the sugared AST
 data STerm = SAbs String STerm
            | SApp STerm STerm
@@ -44,10 +52,7 @@ data STerm = SAbs String STerm
            | Boolean Bool
            | LetIn String STerm STerm
            | LetRec String STerm STerm
-           | Plus STerm STerm
-           | Mult STerm STerm
-           | Minus STerm STerm
-           | Pow STerm STerm
+           | Bop Bop STerm STerm
            | SPair STerm STerm
            deriving (Show, Eq) 
 
@@ -59,10 +64,7 @@ data TypedSTerm = TAbs (String, Type) (TypedSTerm, Type)
                 | TBoolean Bool
                 | TLetIn (String, Type) TypedSTerm TypedSTerm
                 | TLetRec (String, Type) TypedSTerm TypedSTerm
-                | TPlus TypedSTerm TypedSTerm
-                | TMult TypedSTerm TypedSTerm
-                | TMinus TypedSTerm TypedSTerm
-                | TPow TypedSTerm TypedSTerm
+                | TBop Bop TypedSTerm TypedSTerm
                 | TPair TypedSTerm TypedSTerm
                 deriving Eq
 
@@ -100,10 +102,10 @@ ppTTerm term = showWidth 60 $ aux term minprec
       PP.nest 2 (PP.text "if" </> aux e1 c) <$>
       PP.nest 2 (PP.text "then" </> aux e2 c) <$>
       PP.nest 2 (PP.text "else" </> aux e3 c)
-    aux e@(TPlus e1 e2) c = left e1 "+" e2 e c
-    aux e@(TMinus e1 e2) c = left e1 "-" e2 e c
-    aux e@(TMult e1 e2) c = left e1 "*" e2 e c
-    aux e@(TPow e1 e2) c = right e1 "**" e2 e c
+    aux e@(TBop Plus e1 e2) c = left e1 "+" e2 e c
+    aux e@(TBop Minus e1 e2) c = left e1 "-" e2 e c
+    aux e@(TBop Mult e1 e2) c = left e1 "*" e2 e c
+    aux e@(TBop Pow e1 e2) c = right e1 "**" e2 e c
 
     lam x typ e ex c =
       let c' = prec ex in
@@ -131,17 +133,17 @@ ppTTerm term = showWidth 60 $ aux term minprec
 
     prec (TId _) = 0
     prec (TNum _ ) = 0
-    prec (TLetIn _ _ _) = 0 -- not sure
-    prec (TLetRec _ _ _) = 0
     prec (TPair _ _) = 0
     prec (TBoolean _) = 0
     prec (TApp _ _) = 1
-    prec (TPow _ _) = 2
-    prec (TMult _ _) = 3
-    prec (TPlus _ _) = 4
-    prec (TMinus _ _) = 4
+    prec (TBop Pow _ _) = 2
+    prec (TBop Mult _ _) = 3
+    prec (TBop Plus _ _) = 4
+    prec (TBop Minus _ _) = 4
     prec (TAbs _ _) = 5
     prec (TIfThenElse _ _ _) = 5
+    prec (TLetIn _ _ _) = 5 -- not sure
+    prec (TLetRec _ _ _) = 5
     minprec = 6 
         
     

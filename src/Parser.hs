@@ -30,20 +30,7 @@ constTrue = reserved "true" >> return (Boolean True)
                 
 constFalse = reserved "false" >> return (Boolean False)
 
-
---iszero = reserved "iszero" >> return IsZero
-
 numeral = natural >>= \n -> return (Num n)
-
-{-
-nsucc = reserved "succ" >> return Succ
-
-prev = reserved "pred" >> return Pred
-          
-first = reserved "fst" >> return Fst
-  
-second = reserved "snd" >> return Snd
--}
 
 inpair =
   do
@@ -87,10 +74,10 @@ term = parens expr
        
 oper = buildExpressionParser table term
   where op x f = Infix (reservedOp x >> return f)
-        table = [[op "**" Pow AssocRight],
-                 [op "*" Mult AssocLeft ],
-                 [op "+" Plus AssocLeft,
-                  op "-" Minus AssocLeft]]
+        table = [[op "**" (Bop Pow) AssocRight],
+                 [op "*" (Bop Mult) AssocLeft ],
+                 [op "+" (Bop Plus) AssocLeft,
+                  op "-" (Bop Minus) AssocLeft]]
 
 
 expr =
