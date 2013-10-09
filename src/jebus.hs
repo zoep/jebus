@@ -25,14 +25,14 @@ data Options =
 
 annot :: Options
 annot = Annot
-        &= details ["Print an explicitly typed version of the program"]
+        &= help "Print an explicitly typed version of the program"
         
 interpret :: Options
 interpret = Eval
        { trace = False &= help "show each beta reduction"
        , eval  = Normal &= help "specify evaluation strategy: normal (default) or applicative" 
        }
-       &= details ["Interpret the program"]
+       &= help "Interpret the program"
        
 jebusModes :: Mode (CmdArgs Options)
 jebusModes = cmdArgsMode $ modes [annot, interpret]
@@ -44,7 +44,7 @@ jebusModes = cmdArgsMode $ modes [annot, interpret]
 _PROGRAM_NAME = "jebus"
 _PROGRAM_VERSION = "0.1"
 _PROGRAM_INFO = _PROGRAM_NAME ++ " version " ++ _PROGRAM_VERSION
-_PROGRAM_ABOUT = "Yet another lambda calculus interpreter"
+_PROGRAM_ABOUT = "The Jebus Lambda Calculus Interpreter"
 _AUTHORS = "Zoe Paraskevopoulou, Nick Giannarakis 2013"
 
 main :: IO ()

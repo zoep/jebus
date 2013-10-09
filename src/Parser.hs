@@ -71,19 +71,18 @@ term = parens expr
        <|> pair
        <|> abstraction
        <|> variable
-       
-oper = buildExpressionParser table term
+
+app =
+  do
+    exprlst <- many1 term
+    return (foldl1 SApp exprlst)
+
+expr = buildExpressionParser table app
   where op x f = Infix (reservedOp x >> return f)
         table = [[op "**" (Bop Pow) AssocRight],
                  [op "*" (Bop Mult) AssocLeft ],
                  [op "+" (Bop Plus) AssocLeft,
                   op "-" (Bop Minus) AssocLeft]]
-
-
-expr =
-  do
-    exprlst <- many1 oper
-    return (foldl1 SApp exprlst)
 
 program p =
   do

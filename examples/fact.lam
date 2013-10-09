@@ -2,6 +2,6 @@
 -- because it is a strict evaluation strategy 
 
 let rec fac = 
-	\x. if iszero x then 1 else x*(fac (x-1)) 
+	\x. if iszero x then 1 else x * fac (x-1) 
 in
 	fac 4
