@@ -98,4 +98,4 @@ program p =
     eof
     return r
 
-parse p input = Parsec.parse (program p) "" input
+parse input = Parsec.parse (program expr) "" input

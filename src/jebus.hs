@@ -68,7 +68,7 @@ showSteps [t] = Types.ppTerm t
 showSteps (t : ts) = Types.ppTerm t ++ " =>\n" ++ showSteps ts
 
 annotProg p =
-  case (P.parse P.expr p) of
+  case (P.parse p) of
     Left str ->
       do
         putStr "parse error at "
@@ -80,7 +80,7 @@ annotProg p =
                         Types.ppTTerm (Types.tExpr node)  
 
 interProg p eval trace =
-  case (P.parse P.expr p) of
+  case (P.parse p) of
     Left str ->
       do
         putStr "parse error at "
