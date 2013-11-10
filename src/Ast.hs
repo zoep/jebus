@@ -2,7 +2,7 @@ module Ast where
 
 import Types
 import qualified Typeinf as T
-import qualified Data.List as List
+import qualified Data.List as List hiding (and)
 
 -- useful definitions in terms of lambda calculus
 intToChurch :: Int -> Term
@@ -58,10 +58,50 @@ power :: Term -> Term -> Term
 power x y = 
   App (App (Abs "x" (Abs "y" (App (Ident "y") (Ident "x")))) x) y
 
+neg :: Term
+neg =
+  Abs "x" (App (App (Ident "x") (boolToChurch False)) (boolToChurch True))
+
+and :: Term -> Term -> Term
+and x y =
+  App (App (Abs "x" (Abs"y" (App (App (Ident "x") (Ident "y")) (boolToChurch False)))) x) y
+
+
+or :: Term -> Term -> Term
+or x y =
+  App (App (Abs "x" (Abs"y" (App (App (Ident "x") (boolToChurch True)) (Ident "y")))) x) y
+
+leq :: Term -> Term -> Term
+leq x y =
+  App (App (Abs "x" (Abs "y" (App isZero (App (App (Ident "y") predecessor) (Ident "x"))))) x) y 
+
+lt :: Term -> Term -> Term
+lt x y = 
+  App (App (Abs "x" (Abs "y" (App neg (leq (Ident "y") (Ident "x"))))) x) y
+  
+eq :: Term -> Term -> Term
+eq x y =
+  App (App (Abs "x" (Abs "y" (Ast.and (leq (Ident "x") (Ident "y")) (leq (Ident "y") (Ident "x"))))) x) y
+
+geq :: Term -> Term -> Term
+geq x y = leq y x
+
+gt :: Term -> Term -> Term
+gt x y = lt y x
+
 applyBop Plus = add
 applyBop Minus = Ast.subtract
 applyBop Mult = multiply
 applyBop Pow = power
+
+applyRop Lt = lt
+applyRop Leq = leq
+applyRop Eq = eq
+applyRop Geq = geq
+applyRop Gt = gt
+
+applyBoolop And = Ast.and
+applyBoolop Or = Ast.or
 
 -- a list containing lambda definitions and types for library functions
 
@@ -85,7 +125,10 @@ libList =
      Arrow (Pair (Tvar a) (Tvar b)) (Tvar a))),
    ("snd",
     (second,
-    Arrow (Pair (Tvar c) (Tvar d)) (Tvar d)))]
+    Arrow (Pair (Tvar c) (Tvar d)) (Tvar d))),
+   ("not",
+    (neg,
+     Arrow Bool Bool))]
 
 
 -- the initial enviroment, containing the types of
@@ -170,7 +213,7 @@ walk (LetRec id term1 term2) env p =
 walk (Bop bop term1 term2) env p = 
   do
     node1 <- walk term1 env p
-    node2 <- walk term2 env (pool node1)
+    node2 <- walk term2 (T.substEnv (subst node1) env) (pool node1)
     sub1 <- T.unify Nat (typ node1)
     sub2 <- T.unify Nat (T.substType sub1 (typ node2))
     let sub = Composition sub2 sub1
@@ -181,10 +224,38 @@ walk (Bop bop term1 term2) env p =
       subst = sub
       }
 
+walk (Rop rop term1 term2) env p = 
+  do
+    node1 <- walk term1 env p
+    node2 <- walk term2 (T.substEnv (subst node1) env) (pool node1)
+    sub1 <- T.unify Nat (typ node1)
+    sub2 <- T.unify Nat (T.substType sub1 (typ node2))
+    let sub = Composition sub2 sub1
+    return $ node2 {
+      nodeExpr = applyRop rop (nodeExpr node1) (nodeExpr node2),
+      tExpr = TRop rop (tExpr node1) (tExpr node2),
+      typ = Bool,
+      subst = sub
+      }
+
+walk (Boolop bop term1 term2) env p = 
+  do
+    node1 <- walk term1 env p
+    node2 <- walk term2 (T.substEnv (subst node1) env) (pool node1)
+    sub1 <- T.unify Bool (typ node1)
+    sub2 <- T.unify Bool (T.substType sub1 (typ node2))
+    let sub = Composition sub2 sub1
+    return $ node2 {
+      nodeExpr = applyBoolop bop (nodeExpr node1) (nodeExpr node2),
+      tExpr = TBoolop bop (tExpr node1) (tExpr node2),
+      typ = Bool,
+      subst = sub
+      }
+
 walk (SPair term1 term2) env p =
   do
     node1 <- walk term1 env p
-    node2 <- walk term2 env (pool node1)
+    node2 <- walk term2 (T.substEnv (subst node1) env) (pool node1)
     return $ node2 {
       nodeExpr = pair (nodeExpr node1) (nodeExpr node2),
       tExpr = TPair (tExpr node1) (tExpr node2),

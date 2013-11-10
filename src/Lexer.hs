@@ -5,7 +5,8 @@ import Text.Parsec.String
 import Text.Parsec.Token as T
 import Text.Parsec.Language
 
-def = haskellDef{ T.reservedOpNames = ["\\", ".", "=", "+", "-", "*", "**"]
+def = haskellDef{ T.reservedOpNames = ["\\", ".", "=", "+", "-", "*", "**", "<",
+                                       "<=", ">", ">=", "==", "&&", "||"]
                 , T.reservedNames = ["let", "in", "true",
                                      "false", "if", "then",
                                      "else", "let rec"]

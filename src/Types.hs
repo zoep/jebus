@@ -42,6 +42,17 @@ data Bop = Plus
          | Minus
          | Pow
          deriving (Eq, Show)
+
+data Rop = Leq
+         | Lt
+         | Eq
+         | Geq
+         | Gt
+         deriving (Eq, Show)
+
+data Boolop = And
+            | Or
+            deriving (Eq, Show)
                   
 -- Datatype for the sugared AST
 data STerm = SAbs String STerm
@@ -53,6 +64,8 @@ data STerm = SAbs String STerm
            | LetIn String STerm STerm
            | LetRec String STerm STerm
            | Bop Bop STerm STerm
+           | Rop Rop STerm STerm
+           | Boolop Boolop STerm STerm
            | SPair STerm STerm
            deriving (Show, Eq) 
 
@@ -65,6 +78,8 @@ data TypedSTerm = TAbs (String, Type) (TypedSTerm, Type)
                 | TLetIn (String, Type) TypedSTerm TypedSTerm
                 | TLetRec (String, Type) TypedSTerm TypedSTerm
                 | TBop Bop TypedSTerm TypedSTerm
+                | TRop Rop TypedSTerm TypedSTerm
+                | TBoolop Boolop TypedSTerm TypedSTerm
                 | TPair TypedSTerm TypedSTerm
                 deriving Eq
 
@@ -106,7 +121,14 @@ ppTTerm term = showWidth 60 $ aux term minprec
     aux e@(TBop Minus e1 e2) c = left e1 "-" e2 e c
     aux e@(TBop Mult e1 e2) c = left e1 "*" e2 e c
     aux e@(TBop Pow e1 e2) c = right e1 "**" e2 e c
-
+    aux e@(TRop Lt e1 e2) c = none e1 "<" e2 e c
+    aux e@(TRop Leq e1 e2) c = none e1 "<=" e2 e c
+    aux e@(TRop Eq e1 e2) c = none e1 "==" e2 e c
+    aux e@(TRop Geq e1 e2) c = none e1 ">=" e2 e c
+    aux e@(TRop Gt e1 e2) c = none e1 ">" e2 e c
+    aux e@(TBoolop And e1 e2) c = left e1 "&&" e2 e c
+    aux e@(TBoolop Or e1 e2) c = left e1 "||" e2 e c
+    
     lam x typ e ex c =
       let c' = prec ex in
       (if (c' > c) then PP.parens else id) $
@@ -123,6 +145,11 @@ ppTTerm term = showWidth 60 $ aux term minprec
       (if (c' > c) then PP.parens else id) $
       (assoc a c') <> PP.text op <> (aux b c')
 
+    none a op b e c =
+      let c' = prec e in
+      (if (c' > c) then PP.parens else id) $
+      (aux a c') <> PP.text op <> (aux b c')
+      
     assoc e c =
       let c' = prec e in
       (if (c == c') then PP.parens else id) $
@@ -140,11 +167,14 @@ ppTTerm term = showWidth 60 $ aux term minprec
     prec (TBop Mult _ _) = 3
     prec (TBop Plus _ _) = 4
     prec (TBop Minus _ _) = 4
-    prec (TAbs _ _) = 5
-    prec (TIfThenElse _ _ _) = 5
-    prec (TLetIn _ _ _) = 5 -- not sure
-    prec (TLetRec _ _ _) = 5
-    minprec = 6 
+    prec (TBoolop And _ _) = 5
+    prec (TBoolop Or _ _) = 6
+    prec (TRop _ _ _) = 7
+    prec (TAbs _ _) = 8
+    prec (TIfThenElse _ _ _) = 8
+    prec (TLetIn _ _ _) = 8 -- not sure
+    prec (TLetRec _ _ _) = 8
+    minprec = 9
         
     
 -- Datatype for the desugared AST

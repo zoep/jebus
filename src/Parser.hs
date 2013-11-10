@@ -80,9 +80,16 @@ app =
 expr = buildExpressionParser table app
   where op x f = Infix (reservedOp x >> return f)
         table = [[op "**" (Bop Pow) AssocRight],
-                 [op "*" (Bop Mult) AssocLeft ],
+                 [op "*" (Bop Mult) AssocLeft],
                  [op "+" (Bop Plus) AssocLeft,
-                  op "-" (Bop Minus) AssocLeft]]
+                  op "-" (Bop Minus) AssocLeft],
+                 [op "&&" (Boolop And) AssocLeft],
+                 [op "||" (Boolop Or) AssocLeft],
+                 [op "<" (Rop Lt) AssocNone,
+                  op "<=" (Rop Leq) AssocNone,
+                  op "==" (Rop Eq) AssocNone,
+                  op ">=" (Rop Geq) AssocNone,
+                  op ">" (Rop Gt) AssocNone]]
 
 program p =
   do

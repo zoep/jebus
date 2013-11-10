@@ -76,7 +76,8 @@ annotProg p =
     Right ast ->
       case Ast.infer ast of
         Left str -> putStrLn str
-        Right node -> putStrLn $ Types.ppTTerm (Types.tExpr node)  
+        Right node -> putStrLn $ "----------------------------\n" ++
+                        Types.ppTTerm (Types.tExpr node)  
 
 interProg p eval trace =
   case (P.parse P.expr p) of
