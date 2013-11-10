@@ -2,7 +2,7 @@ The Jebus Lambda Calculus Interpreter
 =====================================
 
 Jebus is an interpreter for a lambda calculus variation implemented in Haskell.
-Jebus was created for demonstration porposes, as part of a lambda calculus course of National Technical University of Athens.
+Jebus was created for demonstration purposes, as part of a lambda calculus course of National Technical University of Athens.
 
 
 Syntax
@@ -10,7 +10,7 @@ Syntax
 
    
 **e** ::=  **e<sub>1</sub>  e<sub>2</sub>** <br>
-     | \ **ident** . **e**   <br>
+     | "\"" **ident** "." **e**   <br>
      | "let" ["rec"] **ident** "=" **e<sub>1</sub>** "in" **e<sub>2</sub>** <br>
      | "["**e<sub>1</sub>**"," **e<sub>1</sub>**"]" <br>
      | "true" | "false" <br>
