@@ -1,0 +1,5 @@
+let f = \x. 
+	if (iszero x) then x + 3 
+	else x * 3 
+in
+	f 0

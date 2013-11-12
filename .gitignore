@@ -11,3 +11,7 @@ jebus
 *.*.swp
 [#]*[#]
 *~
+.DS_Store
+/report/*
+!/report/slides.pdf
+!/report/slides.tex

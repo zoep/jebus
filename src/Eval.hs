@@ -62,7 +62,7 @@ evalApplicative (App e1 e2) fresh | not (isValue e1 && isValue e2) =
     do
       (e1', fresh') <- evalApplicative e1 fresh
       return (App e1' e2, fresh')
-evalApplicative (App (Abs id e1) e2) fresh =
+evalApplicative (App (Abs id e1) e2) fresh = -- will reach that rule only if e1 and e2 are values!
     return $ substitute (id, e2) e1 fresh
 evalApplicative (Fix (Abs id e)) fresh =
   return $ substitute (id, Fix (Abs id e)) e fresh

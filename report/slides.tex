@@ -1,0 +1,566 @@
+\documentclass[xcolor=table]{beamer}
+\usetheme{Dresden} % My favorite!
+\usecolortheme{beaver} % Simple and clean template
+\usepackage{amssymb,latexsym}
+\usepackage{xltxtra, xgreek}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{url} 
+
+\setsansfont[Mapping=tex-text]{CMU Concrete}
+\setmonofont{Courier New}
+\newcommand{\tab}{\hspace*{1.2em}}
+
+\definecolor{links}{HTML}{E4287C}
+\hypersetup{colorlinks,linkcolor=,urlcolor=links}
+\definecolor{gray}{gray}{0.89}
+
+%\usetheme{Boadilla} % Pretty neat, soft color.
+%\usetheme{default}
+%\usetheme{Warsaw}
+%\usetheme{Bergen} % This template has nagivation on the left
+%\usetheme{Frankfurt} % Similar to the default 
+%with an extra region at the top.
+%\usecolortheme{seahorse} % Simple and clean template
+%\usetheme{Darmstadt} % not so good
+% Uncomment the following line if you want %
+% page numbers and using Warsaw theme%
+% \setbeamertemplate{footline}[page number]
+\setbeamercovered{transparent}
+%\setbeamercovered{invisible}
+% To remove the navigation symbols from 
+% the bottom of slides%
+\setbeamertemplate{navigation symbols}{} 
+\expandafter\def\expandafter\insertshorttitle\expandafter{%
+  \insertshorttitle\hfill\insertframenumber\,/\,\inserttotalframenumber}
+  
+
+ 
+\newcommand{\bs}[1]{\boldsymbol{#1}}  
+\renewcommand{\figurename}{Figure \arabic{figure}}
+
+%\usepackage{bm}         % For typesetting bold math (not \mathbold)
+%\logo{\includegraphics[height=0.6cm]{yourlogo.eps}}
+%
+\title[The Jebus Lambda Calculus Interpreter]{Υλοποίηση ενός διερμηνέα για Λάμβδα Λογισμό}
+\author{Ζωή Παρασκευοπούλου \\ \and Νίκος Γιανναράκης  }
+
+\institute[]
+{
+Σχολή Ηλεκτρολόγων Μηχανικών και Μηχανικών Υπολογιστών\\
+Εθνικό Μετσόβιο Πολυτεχνείο
+}
+\date{\today}
+\begin{document}
+
+\begin{frame}
+\titlepage
+\end{frame}
+
+%% Dependencies
+% wl-pprint
+% parsec
+% cmdargs
+
+\begin{frame}
+\frametitle{The Syntax}
+\begin{block}
+{
+\begin{small}
+\begin{align*}
+e & := e_1 \; e_2 																		                                  & op &:= \bs{``+"}\; | \; \bs{``-"}  \\
+   & | \; \bs{``\lambda"} \; id \; \bs{`` ."} \; e 										                  &        & |\; \bs{``*"} \; 	  \\
+   & | \; \bs{``let"} \; [\bs{``rec"}] \; id \; \bs{``="} \; e_1 \; \bs{``in"} \; e_2 		  & 		& | \; \bs{``**"}		              \\
+   & | \;  \bs{``["}e1\bs{``,"} \; e2\bs{``]"} 													              & rop & := \bs{``="} | \bs{``<"}\\
+   & | \;  id 																			 	                                  & 		& | \bs{``<="} | \bs{``>"}\\
+   & | \;  \bs{``true"}\; | \;\bs{``false"} 													                  &		& | \bs{``>="} \\
+   & | \; \bs{``if"}\; \; e_1\; \bs{``then"}\; e_2\; \bs{``else"}\; e_3    & bop & := \bs{``\&\&"} \\
+   & | \; e_1 \; op \; e_2                                                                                         &             & | \bs{``||"} \\
+   & | \; e_1 \; rop \; e_2                                                                                          & \\
+   & | \; e_1 \; bop \; e_2
+\end{align*}
+\end{small}
+
+}
+
+\end{block}
+\end{frame}
+
+%
+
+
+\begin{frame}
+\frametitle{Type System}
+\begin{block}
+{
+The language is strongly typed featuring the \textbf{Hindley-Milner} type system. The types are implicit in the source (à la Curry) and they are automatically reconstructed using the \textbf{algorithm W} for type inference.
+}
+\end{block}
+
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Hindley-Milner typing}
+\begin{block}
+{ 
+Hindley-Milner type system is a restriction of system F, featuring let polymorphism. Unlike system F, in which type reconstruction is undecidable, 
+the types can be inferred using the algorithm W.
+\\
+\textbf{Significant Limitation: }
+Let-polymorphism is rank-1 polymorphism, that means that functions cannot take as arguments polymorphic functions.
+}
+
+\end{block}
+\end{frame}
+
+\begin{frame}
+\frametitle{Hindley-Milner typing}
+\framesubtitle{Examples}
+\begin{block}
+{ 
+     \begin{columns}[t] % contents are top vertically aligned
+     \begin{column}[T]{5cm} % each column can also be its own environment
+          \begin{figure}[h!]
+				 \begin{small}
+				 \rowcolors{1}{gray}{gray}
+				 \begin{tabular}{l}
+				 \textcolor{black}{
+			      $>$ ./jebus annot} \\
+			      \textcolor{black}{let const = \textbackslash x. \textbackslash y. x in} \\ \relax
+			      \textcolor{black}{[const 1 true, const false 42]} \\
+			      \textcolor{black}{-----------------------------} \\
+			      \textcolor{black}{let const : a1 -> a2 -> a1 =} \\
+			      \textcolor{black}{\tab \textbackslash x. : a1. \textbackslash y. : a6 . x}  \\
+			      \textcolor{black}{in} \\ \relax
+			      \textcolor{black}{\tab [const 1 true, const false 42]}
+			      \end{tabular}	
+				 \end{small}
+			  \caption{Here \textit{const} has type $\forall a. \forall b. (a \rightarrow b \rightarrow a)$}
+		 \end{figure}
+     \end{column}
+     \begin{column}[T]{5cm} % alternative top-align that's better for graphics
+		 \begin{figure}[h!]
+				\begin{small}
+				\rowcolors{1}{gray}{gray}
+			  	\begin{tabular}{l}
+			      \textcolor{black}{$>$ ./jebus annot} \\
+			      \textcolor{black}{let id = \textbackslash x.  x in}\\ \relax
+			      \textcolor{black}{let f = \textbackslash g. [g 1, g true] in}\\
+			      \textcolor{black}{\tab f id} \\
+			      \textcolor{black}{Could not match type Nat with} \\
+			      \textcolor{black}{type Bool}
+				\end{tabular}	
+			  \end{small}			  
+			  \caption{g's type cannot be a polymorphic function!}
+		 \end{figure}	          
+     \end{column}
+     \end{columns}
+}
+
+\end{block}
+\end{frame}
+
+%\frac{Gamma, x:\tau_1 \vdash e:\tau_2}{\Gamma \vdash \lambda x. e:\tau_1 \rightarrow \tau_2}var 
+%\frac{}{\Gamma , x: \tau \vdash x:\tau }var  
+ 
+\begin{frame}
+\frametitle{Hindley-Milner typing}
+\framesubtitle{Types}
+\begin{block}{We will use $\tau$ for simple types, $\sigma$ for type schemes and $\alpha$ for type variables.}
+\begin{align*}
+\tau & := \tau_1\rightarrow \tau_2  &  \sigma  & := \forall  \alpha. \sigma_1\\
+        & | \tau_1 \times \tau_2          &                      & | \;\tau \\
+        & | Nat                                    & \\
+        & | Bool                                  & \alpha & := \alpha _1 | \alpha _2| .... \\
+        & | \alpha                                       & \\
+\end{align*}
+\end{block} 
+\end{frame}  
+ 
+\begin{frame}
+\frametitle{Hindley-Milner typing}
+\framesubtitle{Typing Rules}
+\begin{block}{}
+\begin{small}
+\begin{align*}
+& \frac{}{\Gamma , x: \sigma \vdash x:\sigma }var  
+& \frac{\Gamma, x:\tau_1 \vdash e:\tau_2}{\Gamma \vdash \lambda x. e:\tau_1 \rightarrow \tau_2}\lambda \\[0.3cm]
+& \frac{\Gamma \vdash e_1:\tau_1\rightarrow\tau_2 \;\; \Gamma \vdash e_2:\tau_1}{\Gamma \vdash e_1 \; e_2:\tau_2 }@ 
+& \frac{\Gamma \vdash e_1:\sigma \;\;\Gamma, x:\sigma \vdash e_2:\tau}{\Gamma \vdash let \; [rec] \; x \; = e_1 \; in \; e_2:\tau }let \\[0.3cm]
+& \frac{\Gamma \vdash e: \sigma \;\; \alpha \not \in FV(\Gamma)}{\Gamma \vdash e: \forall a. \sigma }gen 
+& \frac{\Gamma \vdash e: \forall a. \sigma }{\Gamma \vdash e:\sigma [\alpha \rightarrow \tau ] }inst \\[0.3cm]
+& \frac{\Gamma \vdash e : Bool \;\; \Gamma \vdash e_1:\tau \;\; \Gamma \vdash e_2:\tau}{\Gamma \vdash if \; e \; then \; e_2 \; else \;e_3 : \tau}ite
+& \frac{\Gamma \vdash e_1:\tau_1 \;\; \Gamma \vdash e_2:\tau_2}{\Gamma \vdash [e_1, \; e_2]:\tau_1\times \tau_2  }pair \\[0.3cm]
+\end{align*}
+\end{small}
+\end{block} 
+\end{frame} 
+
+\begin{frame}
+\frametitle{Hindley-Milner typing}
+\framesubtitle{Typing Rules (cont.)}
+\begin{block}{}
+\begin{small}
+ \begin{gather*}
+ \frac{\Gamma \vdash e_1 : Nat \;\; \Gamma \vdash e_2: Nat }{\Gamma \vdash e_1 \diamond e_2: Nat \;\;\; \diamond \in \lbrace +, -, *, /, **\rbrace}op \\[0.3cm]
+ \frac{\Gamma \vdash e_1 : Nat \;\; \Gamma \vdash e_2: Nat }{\Gamma \vdash e_1 \diamond e_2: Bool \;\;\; \diamond \in \lbrace <, <=,==,>,>=\rbrace}rop \\[0.3cm]
+ \frac{\Gamma \vdash e_1 : Bool \;\; \Gamma \vdash e_2: Bool }{\Gamma \vdash e_1 \diamond e_2: Bool \;\;\; \diamond \in \lbrace \&\&, || \rbrace }bop \\[0.3cm]
+ \frac{\Gamma \vdash e : Bool }{\Gamma \vdash not \; e: Bool}not \\
+\end{gather*}
+\end{small}
+\end{block} 
+\end{frame} 
+
+%
+
+\begin{frame}
+\frametitle{The Core Language}
+\begin{block}{The internal representation is actually a pretty small language. Most of the language's expressions are defined as syntactic sugar}
+\begin{align*}
+e & := e_1 \; e_2 	 \\
+   & | \; \bs{\lambda} \; id \; \bs{ .} \; e \\
+   & | \; \bs{Fix} \; e_1                                                                 
+\end{align*}
+\end{block}
+\end{frame}
+
+%
+
+\begin{frame}
+\frametitle{The Core Language}
+\framesubtitle{Syntactic Sugar}
+\begin{block}{}
+\begin{itemize}
+\item \textbf{Integers} The integers are represented internally with church encoding\\
+$$n \equiv \lambda \;s.\; \lambda \; z. \; \underbrace{s(s ... (s }_\text{n times} z)..)$$
+\item \textbf{Arithmetical Operations} $e_1 + e_2 \equiv (\lambda \; x. \; \lambda \; y.\; x \; succ \; y) e_1 \; e_2$\\
+$e_1 - e_2 \equiv (\lambda \; x. \; \lambda \; y.\; y \; pred \; x) e_1 \; e_2$ \\
+$e_1 * e_2 \equiv (\lambda \; x. \; \lambda \; y.\; \lambda \; z. \;  x \; y \; z) e_1 \; e_2$ \\
+$e_1 ** e_2 \equiv (\lambda \; x. \; \lambda \; y.\;  y \; x ) e_1 \; e_2$ \\
+\end{itemize}
+\end{block}
+\end{frame}
+
+\begin{frame}
+\frametitle{The Core Language}
+\framesubtitle{Syntactic Sugar}
+\begin{block}{}
+\begin{itemize}
+\item \textbf{Boolean Constants} \\
+$true \equiv \lambda \; x. \; \lambda \; y.\;  x \;\;\;\;\;\;$ 
+$false \equiv \lambda \; x. \; \lambda \; y.\;  y$ \\
+\item \textbf{Pairs} 
+$[e_1, \; e_2] \equiv \lambda \;x.\; x \; e_1 \; e_2$ \\
+\item \textbf{Provided functions for pairs} \\
+$fst \equiv \lambda \;x.\; x \; true$ with type $\forall \;a. \forall b. \; a \times b \rightarrow a$\\
+$snd \equiv \lambda \;x.\; x \; false$ with type $\forall \;a. \forall b. \; a \times b \rightarrow b$\\
+\item \textbf{Provided functions for Integers} \\
+$succ \equiv \lambda \; x. \; \lambda \; s. \; \lambda \; z. \;s \; (n \; s) \; z $ with type $Nat \rightarrow Nat$\\
+$iszero \equiv \lambda \; x.\; x \; (true \; false) \; true $ with type $Nat \rightarrow Bool$ \\
+$pred \equiv \lambda \; x.\; snd \; (x \; next \; [0,0] )$ with type $Nat \rightarrow Nat$ \\
+where $next \equiv \lambda \; x. \; [succ \; (fst\;x), \; (fst\;x)]$
+\end{itemize}
+\end{block}
+\end{frame}
+
+\begin{frame}
+\frametitle{The Core Language}
+\framesubtitle{Syntactic Sugar}
+\begin{block}{}
+\begin{itemize}
+\item \textbf{Boolean Operators} \\
+$not \equiv \lambda \; x. \; x\; false\; true$ \\
+$e_1 \&\& e_2 \equiv (\lambda \; x. \; \lambda \; y.\;  x \; y \; false) \; e_1 \; e_2$ \\
+$e_1 || e_2 \equiv (\lambda \; x. \; \lambda \; y.\;  x \; true \; y) \; e_1 \; e_2$ \\
+\item \textbf{Relative Operators} \\
+$e_1 \leq e_2 \equiv (\lambda \; x. \; \lambda \; y.\; iszero \;(n\; pred \; m)) \; e_1 \; e_2$ \\
+$e_1 < e_2 \equiv (\lambda \; x. \; \lambda \; y.\; not \;(y\; leq \; x)) \; e_1 \; e_2$ \\
+$e_1 == e_2 \equiv (\lambda \; x. \; \lambda \; y.\; (y\; leq \; x) \&\&(x\; leq \; y))\; e_1 \; e_2$ \\
+$e_1 \geq e_2 == e_2 \leq e_1 $ \\
+$e_1 > e_2 == e_2 < e_1 $ \\
+\end{itemize}
+\end{block}
+\end{frame}
+
+\begin{frame}
+\frametitle{The Core Language}
+\framesubtitle{Syntactic Sugar}
+\begin{block}{}
+\begin{itemize}
+\item \textbf{Let Definitions} \\
+$let \; x \; = \; e_1 \; in \; e_2 \equiv (\lambda \; x. \;e_2 )\; e_1$ \\
+\item \textbf{Let rec is more tricky} 
+$let\; rec \; x \; = \; e_1 \; in \; e_2 \equiv (\lambda \; x. \;e_2 )\; (\bs{Y} \; (\lambda \; x. \;e_1 ))$ \\
+remember that $Y \equiv \lambda \;f. \; (\lambda\; x. \; f \; (x\; x)) \; (\lambda\; x. \; f\;(x\;x))$
+Alternatively, we can add a new construct to simulate $Y$'s behavior: 
+$let\; rec \; x \; = \; e_1 \; in \; e_2 \equiv (\lambda \; x. \;e_2 )\; (\bs{Fix} \; (\lambda \; x. \;e_1 ))$ \\
+In both cases $e_1$ is allowed to refer to $x$. The difference is that, unlike $Y$, $\bs{Fix}$ can be typed with the following rule:
+$$ \frac{\Gamma \vdash e:\tau \rightarrow \tau}{\Gamma \vdash Fix \;e:\tau }fix  $$
+\end{itemize}
+\end{block}
+\end{frame}
+
+\begin{frame}
+\frametitle{The Core Language}
+\framesubtitle{Evaluation Strategies}
+\begin{block}{
+Currently Jebus supports two different evaluation strategies: normal order and applicative order, with the former being a 
+non-strict evaluation strategy and the later a strict one.
+}
+In general:
+\begin{itemize}
+\item \textbf{Normal Order} The leftmost outermost redex is always reduced first
+\\
+\item \textbf{Applicative Order} The leftmost innermost redex is always reduced first
+\end{itemize}
+
+Both strategies evaluate the body of an unapplied  function.
+
+\end{block}
+\end{frame}
+
+\begin{frame}
+\frametitle{Evaluation Strategies}
+\framesubtitle{Normal Order}
+\begin{block}{The normal order reduction will always produce a normal form, if one exists!}
+\begin{gather*}
+\frac{}{ (\lambda \;x.\;e_1)\;e_2\rightarrow e_1 [e_2/x]} \\[0.25cm]
+\frac{e_1\;\rightarrow \;e_1'}{e_1 \; e_2 \rightarrow e_1' \; e_2} \\[0.25cm]
+\frac{e\;\rightarrow\;e'}{v \; e \rightarrow v \; e'} \\[0.25cm]
+\frac{e\;\rightarrow\;e'}{\lambda\;x.\;e\; \rightarrow \lambda \;x. \;e'} \\[0.25cm]
+\end{gather*}
+
+\end{block}
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Evaluation Strategies}
+\framesubtitle{Applicative Order}
+\begin{block}{Applicative order reduction is not normalizing!}
+\begin{gather*}
+\frac{}{ (\lambda \;x.\;v_1)\;v_2\rightarrow v_1 [v_2/x]} \\[0.3cm]
+\frac{e_1\;\rightarrow \;e_1'}{e_1 \; e_2 \rightarrow e_1' \; e_2} \\[0.3cm]
+\frac{e\;\rightarrow\;e'}{v \; e \rightarrow v \; e'} \\[0.3cm]
+\frac{e\;\rightarrow\;e'}{\lambda\;x.\;e\; \rightarrow \lambda \;x. \;e'} \\[0.3cm]
+\end{gather*}
+\end{block}
+\end{frame}
+
+\begin{frame}
+\frametitle{Evaluation Strategies}
+\framesubtitle{Semantics for fix}
+\begin{block}{We can think fix as function that takes a function and computes its fixed point.}
+\begin{gather*}
+\frac{}{ (fix \; \lambda \;x.\;e) \rightarrow e[fix \; \lambda \; x. e/x]} \\[0.3cm]
+\frac{e\;\rightarrow\;e'}{fix \; e \rightarrow fix \; e'} \\[0.3cm]
+\end{gather*}
+
+Note that $e[fix \; \lambda \; x. e/x] \equiv_\beta (\lambda\; x. e) \; (fix \; \lambda \; x. e) \equiv fix \; \lambda \; x. e$ ,
+just like $f \;(Y\; f) \equiv Y \; f$.
+\end{block}
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Evaluation Strategies}
+\framesubtitle{Fix: Example}
+\begin{block}{}
+\begin{tiny}
+\begin{align*}
+ & let \; rec \; fact \; = \; \lambda \; x. \; if \; iszero \; x \; then \; 1 \; else \; x * fact \; (x-1) \; in \; fact \; 3 \\
+ \rightarrow & (\lambda \; fact. \;fact \; 3 )\; (\bs{fix} \; (\lambda \; fact. \lambda \; x. \; if \; iszero \; x \; then \; 1 \; else \; x * fact \; (x-1))) \\
+ \rightarrow & (\bs{fix} \; (\lambda \; fact. \lambda \; x. \; if \; iszero \; x \; then \; 1 \; else \; x * fact \; (x-1))) \; 3\\
+\rightarrow & (\lambda \; x. \; if \; iszero \; x \; then \; 1 \; else \; x * (\bs{fix} \; (\lambda \; fact. \lambda \; x. \; if \; iszero \; x \; then \; 1 \; else \; x * fact \; (x-1))) \; (x-1)) \; 3\\ 
+\rightarrow & if \; iszero \; 3 \; then \; 1 \; else \; 3 * (\bs{fix} \; (\lambda \; fact. \lambda \; x. \; if \; iszero \; x \; then \; 1 \; else \; x * fact \; (x-1))) \; 2 \\
+\rightarrow &  3 * (\bs{fix} \; (\lambda \; fact. \lambda \; x. \; if \; iszero \; x \; then \; 1 \; else \; x * fact \; (x-1))) \; 2 \\
+\rightarrow &  3 * (\lambda \; x. \; if \; iszero \; x \; then \; 1 \; else \; x * (\bs{fix} \; (\lambda \; fact. \lambda \; x. \; if \; iszero \; x \; then \; 1 \; else \; x * fact \; (x-1))) \; (x-1)) \; 2 \\
+\rightarrow & 3 * if \; iszero \; 2 \; then \; 1 \; else \; 2 * (\bs{fix} \; (\lambda \; fact. \lambda \; x. \; if \; iszero \; x \; then \; 1 \; else \; x * fact \; (x-1))) \; 1 \\
+\rightarrow & 3 * 2 * (\bs{fix} \; (\lambda \; fact. \lambda \; x. \; if \; iszero \; x \; then \; 1 \; else \; x * fact \; (x-1))) \; 1 \\
+\rightarrow & 3 * 2 *(\lambda \; x. \; if \; iszero \; x \; then \; 1 \; else \; x * (\bs{fix} \; (\lambda \; fact. \lambda \; x. \; if \; iszero \; x \; then \; 1 \; else \; x * fact \; (x-1))) \; (x-1)) \; 1 \\
+\rightarrow & 3 * 2 * if \; iszero \; 1 \; then \; 1 \; else \; 1 * (\bs{fix} \; (\lambda \; fact. \lambda \; x. \; if \; iszero \; x \; then \; 1 \; else \; x * fact \; (x-1))) \; 0 \; \\
+\rightarrow & 3 * 2 * 1 * (\bs{fix} \; (\lambda \; fact. \lambda \; x. \; if \; iszero \; x \; then \; 1 \; else \; x * fact \; (x-1))) \; 0 \; \\
+\rightarrow & 3 * 2 * 1 * (\lambda \; x. \; if \; iszero \; x \; then \; 1 \; else \; x * (\bs{fix} \; (\lambda \; fact. \lambda \; x. \; if \; iszero \; x \; then \; 1 \; else \; x * fact \; (x-1))) \; (x-1)) \; 0 \; \\
+\rightarrow & 3 * 2 * 1 * if \; iszero \; 0 \; then \; 1 \; else \; 0 * (\bs{fix} \; (\lambda \; fact. \lambda \; x. \; if \; iszero \; x \; then \; 1 \; else \; x * fact \; (x-1))) \; (0-1) \\
+\rightarrow & 3 * 2 * 1 *  1  \\
+\end{align*}
+\end{tiny}
+\end{block}
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Evaluation Strategies}
+\framesubtitle{Normal Order vs. Applicative Order}
+\begin{block}{Consider the following programs:
+  \begin{columns}[t] % contents are top vertically aligned
+     \begin{column}[T]{5cm} % each column can also be its own environment
+          \begin{figure}[h!]
+				 \begin{footnotesize}
+				 \rowcolors{1}{gray}{gray}
+				 \begin{tabular}{l}
+				 \textcolor{black}{
+			      $>$ cat ite.lam} \\
+			      \textcolor{black}{let f = \textbackslash x.} \\ 
+			      \textcolor{black}{\tab  if (iszero x) then x + 3} \\
+				  \textcolor{black}{\tab  else x * 3} \\
+			      \textcolor{black}{in} \\
+			      \textcolor{black}{\tab f 0} \\
+			      \end{tabular}	
+				 \end{footnotesize}
+			  \caption{ite.lam}
+		 \end{figure}
+     \end{column}
+     \begin{column}[T]{5cm} % alternative top-align that's better for graphics
+		 \begin{figure}[h!]
+				\begin{footnotesize}
+				\rowcolors{1}{gray}{gray}
+			  	\begin{tabular}{l}
+			  	 \textcolor{black}{
+			      $>$ cat fact.lam} \\
+			      \textcolor{black}{let rec fact = \textbackslash x. } \\ 
+			      \textcolor{black}{\tab if (iszero x) then 1} \\ 
+			      \textcolor{black}{\tab else x * fact (x-1)} \\
+			      \textcolor{black}{in} \\
+			      \textcolor{black}{\tab fact 4} \\
+				\end{tabular}	
+			  \end{footnotesize}			  
+			  \caption{fact.lam}
+		 \end{figure}	          
+     \end{column}
+     \end{columns}
+}
+\end{block}
+\end{frame}
+
+\begin{frame}
+\frametitle{Evaluation Strategies}
+\framesubtitle{Normal Order vs. Applicative Order}
+Applicative order needs 4 more beta reductions.  
+Applicative order is a strict reduction strategy so both the then and the else parts
+will be evaluated.
+\begin{block}{
+  \begin{columns}[T] % contents are top vertically aligned
+     \begin{column}[T]{6cm} % each column can also be its own environment
+          \begin{figure}[h!]
+				 \begin{footnotesize}
+				 \rowcolors{1}{gray}{gray}
+				 \begin{tabular}{l}
+				 \textcolor{black}{
+			      $>$ ./jebus eval -e=normal -t < ite.lam} \\
+			      \textcolor{black}{(\textbackslash f . f (\textbackslash f . \textbackslash x . x)) $\ldots \ldots$ =>} \\ 
+			      \textcolor{black}{$\ldots$ =>} \\
+				  \textcolor{black}{$\ldots$} \\
+			      \textcolor{black}{$\ldots$ =>} \\
+			      \textcolor{black}{\textbackslash f . \textbackslash x . f (f (f x))} \\
+			      \textcolor{black}{Performed 11 beta reductions.} \\
+			      \end{tabular}	
+				 \end{footnotesize}
+			  \caption{Evaluate ite.lam with normal order strategy. Only 11 beta reductions needed.}
+		 \end{figure}
+     \end{column}
+     \begin{column}[T]{6cm} % alternative top-align that's better for graphics
+		 \begin{figure}[h!]
+				\begin{footnotesize}
+				\rowcolors{1}{gray}{gray}
+				 \begin{tabular}{l}
+				 \textcolor{black}{
+			      $>$ ./jebus eval -e=applicative -t < ite.lam} \\
+			      \textcolor{black}{(\textbackslash f . f (\textbackslash f . \textbackslash x . x)) $\ldots \ldots$ =>} \\ 
+			      \textcolor{black}{$\ldots$ =>} \\
+				  \textcolor{black}{$\ldots$} \\
+			      \textcolor{black}{$\ldots$ =>} \\
+			      \textcolor{black}{\textbackslash f . \textbackslash x . f (f (f x))} \\
+			      \textcolor{black}{Performed 14 beta reductions.} \\
+			      \end{tabular}	
+			  \end{footnotesize}			  
+			  \caption{Evaluate ite.lam with applicative order strategy. 15 beta reductions needed.}
+		 \end{figure}	          
+     \end{column}
+     \end{columns}
+}
+
+\end{block}
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Evaluation Strategies}
+\framesubtitle{Normal Order vs. Applicative Order}
+\begin{block}{
+          \begin{figure}[h!]
+				 \begin{footnotesize}
+				 \rowcolors{1}{gray}{gray}
+				 \begin{tabular}{l}
+				 \textcolor{black}{
+			      $>$ ./jebus eval -e=normal -t < fact.lam} \\
+			      \textcolor{black}{((\textbackslash . fac (\textbackslash f . \textbackslash x . f (f (f (f x))))) $\ldots \ldots$ =>} \\ 
+			      \textcolor{black}{$\ldots$ =>} \\
+				  \textcolor{black}{$\ldots$} \\
+			      \textcolor{black}{$\ldots$ =>} \\
+			      \textcolor{black}{\textbackslash z . \textbackslash x . z (z (z (z (z (z (z (z (z (z (z (z (z (z (z (z (z (z (z (z (z (z (z (z x)...)} \\
+			      \textcolor{black}{Performed 9236 beta reductions.} \\
+			      \end{tabular}	
+				 \end{footnotesize}
+			  \caption{Evaluate fact.lam with normal order strategy. The program terminates after 9236 reductions.}
+		 \end{figure}    
+}
+
+\end{block}
+\end{frame}
+
+\begin{frame}
+\frametitle{Evaluation Strategies}
+\framesubtitle{Normal Order vs. Applicative Order}
+\begin{block}{
+		 \begin{figure}[h!]
+				\begin{footnotesize}
+				\rowcolors{1}{gray}{gray}
+				 \begin{tabular}{l}
+				 \textcolor{black}{
+			      $>$ ./jebus eval -e=applicative -t < fact.lam} \\
+			      \textcolor{black}{((\textbackslash . fac (\textbackslash f . \textbackslash x . f (f (f (f x))))) $\ldots \ldots$ =>} \\ 
+			      \textcolor{black}{$\ldots$ =>} \\
+				  \textcolor{black}{$\ldots$} \\
+			      \textcolor{black}{$\ldots$} \\
+			      \end{tabular}	
+			  \end{footnotesize}			  
+			  \caption{Evaluate fact.lam with applicative order strategy. The program does not terminate.}
+		 \end{figure}	          
+}
+\end{block}
+\end{frame}
+
+\begin{frame}
+\frametitle{Useful links}
+\begin{block}
+{
+\begin{footnotesize}
+\begin{itemize}
+\item \href{http://www.math.ntua.gr/logic/lambda/notes/shmeiwseis-2011.pdf}{Notes} form NTUA's Applications of Logic in Computer Science course %
+\item \href{http://homepage.cs.uiowa.edu/~slonnegr/plf/Book/Chapter5.pdf}{Chapter 5} from the book Syntax and Semantics of Programming Languages, Kenneth Slonneger, Barry L. Kurtz
+\item \href{http://www.cs.uu.nl/wiki/pub/Cco/CourseSchedule/cco-09-typesystems-2x2.pdf}{Hindley-Milner Typing and Algorithm W} from Compiler Construction course notes, Utrech University %
+\item \href{http://lambda.jimpryor.net/lambda_library/}{lambda library} from NYU Lambda Seminar %
+\item \href{http://homes.cs.washington.edu/~djg/2011sp/lec11_6up.pdf}{Simply typed lambda calculus extensions} from Programming Languages course notes, University of Washington %
+\end{itemize}
+\end{footnotesize}
+}
+
+\end{block}
+\end{frame}
+
+\begin{frame}
+\frametitle{The end!}
+\begin{block}
+{\begin{center}
+{\large Demo}
+\end{center}}
+\begin{center}
+ \href{https://github.com/zoep/jebus}{Fork here!}
+ \end{center} 
+\end{block}
+\end{frame}
+% End of slides
+\end{document} 

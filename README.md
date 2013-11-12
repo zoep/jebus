@@ -14,7 +14,7 @@ Syntax
      | "let" ["rec"] **ident** "=" **e<sub>1</sub>** "in" **e<sub>2</sub>** <br>
      | "["**e<sub>1</sub>**"," **e<sub>1</sub>**"]" <br>
      | "true" | "false" <br>
-     | ("if" | "ifl") **e<sub>1</sub>** "then" **e<sub>2</sub>** "else"  **e<sub>3</sub>** <br>
+     |  "if" **e<sub>1</sub>** "then" **e<sub>2</sub>** "else"  **e<sub>3</sub>** <br>
      |  **e<sub>1</sub> op e<sub>2</sub>** <br>
      |  **e<sub>1</sub> rop e<sub>2</sub>** <br>
      |  **e<sub>1</sub> bop e<sub>2</sub>** <br>

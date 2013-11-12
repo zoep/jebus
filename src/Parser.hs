@@ -61,8 +61,7 @@ letrecin =
     e2 <- expr
     return (LetRec v e1 e2)
 
-term = parens expr
-       <|> letrecin
+term =  letrecin
        <|> letin
        <|> constFalse
        <|> constTrue
@@ -71,11 +70,12 @@ term = parens expr
        <|> pair
        <|> abstraction
        <|> variable
-
+       <|> parens expr
 app =
   do
     exprlst <- many1 term
     return (foldl1 SApp exprlst)
+
 
 expr = buildExpressionParser table app
   where op x f = Infix (reservedOp x >> return f)
