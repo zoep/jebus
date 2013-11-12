@@ -374,13 +374,13 @@ just like $f \;(Y\; f) \equiv Y \; f$.
  \rightarrow & (\lambda \; fact. \;fact \; 3 )\; (\bs{fix} \; (\lambda \; fact. \lambda \; x. \; if \; iszero \; x \; then \; 1 \; else \; x * fact \; (x-1))) \\
  \rightarrow & (\bs{fix} \; (\lambda \; fact. \lambda \; x. \; if \; iszero \; x \; then \; 1 \; else \; x * fact \; (x-1))) \; 3\\
 \rightarrow & (\lambda \; x. \; if \; iszero \; x \; then \; 1 \; else \; x * (\bs{fix} \; (\lambda \; fact. \lambda \; x. \; if \; iszero \; x \; then \; 1 \; else \; x * fact \; (x-1))) \; (x-1)) \; 3\\ 
-\rightarrow & if \; iszero \; 3 \; then \; 1 \; else \; 3 * (\bs{fix} \; (\lambda \; fact. \lambda \; x. \; if \; iszero \; x \; then \; 1 \; else \; x * fact \; (x-1))) \; 2 \\
+\rightarrow & if \; iszero \; 3 \; then \; 1 \; else \; 3 * (\bs{fix} \; (\lambda \; fact. \lambda \; x. \; if \; iszero \; x \; then \; 1 \; else \; x * fact \; (x-1))) \; (3-1) \\
 \rightarrow &  3 * (\bs{fix} \; (\lambda \; fact. \lambda \; x. \; if \; iszero \; x \; then \; 1 \; else \; x * fact \; (x-1))) \; 2 \\
 \rightarrow &  3 * (\lambda \; x. \; if \; iszero \; x \; then \; 1 \; else \; x * (\bs{fix} \; (\lambda \; fact. \lambda \; x. \; if \; iszero \; x \; then \; 1 \; else \; x * fact \; (x-1))) \; (x-1)) \; 2 \\
-\rightarrow & 3 * if \; iszero \; 2 \; then \; 1 \; else \; 2 * (\bs{fix} \; (\lambda \; fact. \lambda \; x. \; if \; iszero \; x \; then \; 1 \; else \; x * fact \; (x-1))) \; 1 \\
+\rightarrow & 3 * if \; iszero \; 2 \; then \; 1 \; else \; 2 * (\bs{fix} \; (\lambda \; fact. \lambda \; x. \; if \; iszero \; x \; then \; 1 \; else \; x * fact \; (x-1))) \; (2-3) \\
 \rightarrow & 3 * 2 * (\bs{fix} \; (\lambda \; fact. \lambda \; x. \; if \; iszero \; x \; then \; 1 \; else \; x * fact \; (x-1))) \; 1 \\
 \rightarrow & 3 * 2 *(\lambda \; x. \; if \; iszero \; x \; then \; 1 \; else \; x * (\bs{fix} \; (\lambda \; fact. \lambda \; x. \; if \; iszero \; x \; then \; 1 \; else \; x * fact \; (x-1))) \; (x-1)) \; 1 \\
-\rightarrow & 3 * 2 * if \; iszero \; 1 \; then \; 1 \; else \; 1 * (\bs{fix} \; (\lambda \; fact. \lambda \; x. \; if \; iszero \; x \; then \; 1 \; else \; x * fact \; (x-1))) \; 0 \; \\
+\rightarrow & 3 * 2 * if \; iszero \; 1 \; then \; 1 \; else \; 1 * (\bs{fix} \; (\lambda \; fact. \lambda \; x. \; if \; iszero \; x \; then \; 1 \; else \; x * fact \; (x-1))) \; (1-1) \; \\
 \rightarrow & 3 * 2 * 1 * (\bs{fix} \; (\lambda \; fact. \lambda \; x. \; if \; iszero \; x \; then \; 1 \; else \; x * fact \; (x-1))) \; 0 \; \\
 \rightarrow & 3 * 2 * 1 * (\lambda \; x. \; if \; iszero \; x \; then \; 1 \; else \; x * (\bs{fix} \; (\lambda \; fact. \lambda \; x. \; if \; iszero \; x \; then \; 1 \; else \; x * fact \; (x-1))) \; (x-1)) \; 0 \; \\
 \rightarrow & 3 * 2 * 1 * if \; iszero \; 0 \; then \; 1 \; else \; 0 * (\bs{fix} \; (\lambda \; fact. \lambda \; x. \; if \; iszero \; x \; then \; 1 \; else \; x * fact \; (x-1))) \; (0-1) \\
