@@ -182,7 +182,7 @@ Let-polymorphism is rank-1 polymorphism, that means that functions cannot take a
 \begin{frame}
 \frametitle{Hindley-Milner typing}
 \framesubtitle{Typing Rules}
-\begin{block}{}
+
 \begin{small}
 \begin{align*}
 & \frac{}{\Gamma , x: \sigma \vdash x:\sigma }var  
@@ -195,13 +195,11 @@ Let-polymorphism is rank-1 polymorphism, that means that functions cannot take a
 & \frac{\Gamma \vdash e_1:\tau_1 \;\; \Gamma \vdash e_2:\tau_2}{\Gamma \vdash [e_1, \; e_2]:\tau_1\times \tau_2  }pair \\[0.3cm]
 \end{align*}
 \end{small}
-\end{block} 
 \end{frame} 
 
 \begin{frame}
 \frametitle{Hindley-Milner typing}
 \framesubtitle{Typing Rules (cont.)}
-\begin{block}{}
 \begin{small}
  \begin{gather*}
  \frac{\Gamma \vdash e_1 : Nat \;\; \Gamma \vdash e_2: Nat }{\Gamma \vdash e_1 \diamond e_2: Nat \;\;\; \diamond \in \lbrace +, -, *, /, **\rbrace}op \\[0.3cm]
@@ -210,7 +208,6 @@ Let-polymorphism is rank-1 polymorphism, that means that functions cannot take a
  \frac{\Gamma \vdash e : Bool }{\Gamma \vdash not \; e: Bool}not \\
 \end{gather*}
 \end{small}
-\end{block} 
 \end{frame} 
 
 %
@@ -231,7 +228,6 @@ e & := e_1 \; e_2 	 \\
 \begin{frame}
 \frametitle{The Core Language}
 \framesubtitle{Syntactic Sugar}
-\begin{block}{}
 \begin{itemize}
 \item \textbf{Integers} The integers are represented internally with church encoding\\
 $$n \equiv \lambda \;s.\; \lambda \; z. \; \underbrace{s(s ... (s }_\text{n times} z)..)$$
@@ -240,13 +236,11 @@ $e_1 - e_2 \equiv (\lambda \; x. \; \lambda \; y.\; y \; pred \; x) e_1 \; e_2$ 
 $e_1 * e_2 \equiv (\lambda \; x. \; \lambda \; y.\; \lambda \; z. \;  x \; y \; z) e_1 \; e_2$ \\
 $e_1 ** e_2 \equiv (\lambda \; x. \; \lambda \; y.\;  y \; x ) e_1 \; e_2$ \\
 \end{itemize}
-\end{block}
 \end{frame}
 
 \begin{frame}
 \frametitle{The Core Language}
 \framesubtitle{Syntactic Sugar}
-\begin{block}{}
 \begin{itemize}
 \item \textbf{Boolean Constants} \\
 $true \equiv \lambda \; x. \; \lambda \; y.\;  x \;\;\;\;\;\;$ 
@@ -262,13 +256,11 @@ $iszero \equiv \lambda \; x.\; x \; (true \; false) \; true $ with type $Nat \ri
 $pred \equiv \lambda \; x.\; snd \; (x \; next \; [0,0] )$ with type $Nat \rightarrow Nat$ \\
 where $next \equiv \lambda \; x. \; [succ \; (fst\;x), \; (fst\;x)]$
 \end{itemize}
-\end{block}
 \end{frame}
 
 \begin{frame}
 \frametitle{The Core Language}
 \framesubtitle{Syntactic Sugar}
-\begin{block}{}
 \begin{itemize}
 \item \textbf{Boolean Operators} \\
 $not \equiv \lambda \; x. \; x\; false\; true$ \\
@@ -281,13 +273,11 @@ $e_1 == e_2 \equiv (\lambda \; x. \; \lambda \; y.\; (y\; leq \; x) \&\&(x\; leq
 $e_1 \geq e_2 == e_2 \leq e_1 $ \\
 $e_1 > e_2 == e_2 < e_1 $ \\
 \end{itemize}
-\end{block}
 \end{frame}
 
 \begin{frame}
 \frametitle{The Core Language}
 \framesubtitle{Syntactic Sugar}
-\begin{block}{}
 \begin{itemize}
 \item \textbf{Let Definitions} \\
 $let \; x \; = \; e_1 \; in \; e_2 \equiv (\lambda \; x. \;e_2 )\; e_1$ \\
@@ -299,7 +289,6 @@ $let\; rec \; x \; = \; e_1 \; in \; e_2 \equiv (\lambda \; x. \;e_2 )\; (\bs{Fi
 In both cases $e_1$ is allowed to refer to $x$. The difference is that, unlike $Y$, $\bs{Fix}$ can be typed with the following rule:
 $$ \frac{\Gamma \vdash e:\tau \rightarrow \tau}{\Gamma \vdash Fix \;e:\tau }fix  $$
 \end{itemize}
-\end{block}
 \end{frame}
 
 \begin{frame}
@@ -367,7 +356,7 @@ just like $f \;(Y\; f) \equiv Y \; f$.
 \begin{frame}
 \frametitle{Evaluation Strategies}
 \framesubtitle{Fix: Example}
-\begin{block}{}
+
 \begin{tiny}
 \begin{align*}
  & let \; rec \; fact \; = \; \lambda \; x. \; if \; iszero \; x \; then \; 1 \; else \; x * fact \; (x-1) \; in \; fact \; 3 \\
@@ -387,7 +376,7 @@ just like $f \;(Y\; f) \equiv Y \; f$.
 \rightarrow & 3 * 2 * 1 *  1  \\
 \end{align*}
 \end{tiny}
-\end{block}
+
 \end{frame}
 
 
@@ -534,13 +523,40 @@ will be evaluated.
 \end{frame}
 
 \begin{frame}
+\frametitle{How to use Jebus}
+\begin{scriptsize}
+Jebus reads a program from the standard input and can print the type annotated version of the program after the type inference or evaluate the program with the selected strategy. You can also trace the evaluation and count the number of reduction steps. \\ \medskip
+\rowcolors{1}{gray}{gray}
+\begin{tabular}{l p{5cm}}
+\multicolumn{2}{l}{jebus [COMMAND] ... [OPTIONS]} \\
+&\\
+Common flags: &\\
+ \tab -h --help &            Display help message \\
+ \tab -V --version &       Print version information \\
+&\\
+jebus annot& \\
+\multicolumn{2}{l}{\tab  Print an explicitly typed version of the program}\\
+&\\
+jebus eval [OPTIONS] &\\
+\multicolumn{2}{l}{\tab  Interpret the program} \\
+&\\
+ \tab  -t --trace         & show each beta reduction \\
+ \tab -e --eval=EVALMODE & specify evaluation strategy: normal (default) or applicative \\
+                                    
+
+\end{tabular}
+\end{scriptsize}
+\end{frame}
+
+
+\begin{frame}
 \frametitle{Useful links}
 \begin{block}
 {
 \begin{footnotesize}
 \begin{itemize}
 \item \href{http://www.math.ntua.gr/logic/lambda/notes/shmeiwseis-2011.pdf}{Notes} form NTUA's Applications of Logic in Computer Science course %
-\item \href{http://homepage.cs.uiowa.edu/~slonnegr/plf/Book/Chapter5.pdf}{Chapter 5} from the book Syntax and Semantics of Programming Languages, Kenneth Slonneger, Barry L. Kurtz
+\item \href{http://homepage.cs.uiowa.edu/~slonnegr/plf/Book/Chapter5.pdf}{Chapter 5} from the book Formal Syntax and Semantics of Programming Languages, Kenneth Slonneger, Barry L. Kurtz
 \item \href{http://www.cs.uu.nl/wiki/pub/Cco/CourseSchedule/cco-09-typesystems-2x2.pdf}{Hindley-Milner Typing and Algorithm W} from Compiler Construction course notes, Utrech University %
 \item \href{http://lambda.jimpryor.net/lambda_library/}{lambda library} from NYU Lambda Seminar %
 \item \href{http://homes.cs.washington.edu/~djg/2011sp/lec11_6up.pdf}{Simply typed lambda calculus extensions} from Programming Languages course notes, University of Washington %
