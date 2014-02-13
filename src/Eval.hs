@@ -15,7 +15,7 @@ isFreeIn id (Fix e) = isFreeIn id e
 -- Concatenates an identifier with the next available number
 
 freshName :: FreshPool -> String -> (String, FreshPool)
-freshName pool id = (id ++ show (head pool), tail pool)
+freshName pool id = ("_" ++ id ++ show (head pool), tail pool)
 
 substitute :: (String, Term)  -> Term -> FreshPool -> (Term, FreshPool)
 substitute (id, e) (Ident x) fresh

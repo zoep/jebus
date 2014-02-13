@@ -1,0 +1,18 @@
+let eucl_div = \y. \x.
+  let rec aux = \q. \acc. 
+	  if (y-acc) < x then [q, acc] else aux (q+1) (acc+x)
+  in
+  if y < x then [0, y] 
+  else  
+	let res = aux 1 x in 
+	[fst res,  y - (snd res)]
+in
+
+let rec gcd = \a. \b.
+  if b == 0 then a
+  else 
+	let rem = snd (eucl_div a b) in
+	gcd b rem
+in
+
+gcd 35 2

@@ -15,16 +15,27 @@ data Type = Arrow Type Type
 
 
 ppType :: Type -> String
-ppType t = show (aux t False)
-  where aux (Arrow t1 t2) c =
-          (if c then parens else id)  
-          ((aux t1 True) <> PP.text "->" <> (aux t2 False))
-        aux Nat _ = PP.text "Nat"
-        aux Bool _ = PP.text"Bool"
-        aux (Tvar a) _ = PP.text ("a" ++ show a)
-        aux (Pair t1 t2) _  =
-          (aux  t1 False) <> PP.text "*" <> (aux t2 False)
-    
+ppType t = show (aux t False maxprec)
+  where aux t@(Arrow t1 t2) c p =
+          let p' = prec t in 
+          (if c || (p < p') then parens else id)  
+          ((aux t1 True p') <> PP.text " -> " <> (aux t2 False p'))
+        aux Nat _ _ = PP.text "Nat"
+        aux Bool _ _ = PP.text"Bool"
+        aux (Tvar a) _ _ = PP.text ("a" ++ show a)
+        aux t@(Pair t1 t2) _  p =
+          let p' = prec t in 
+          (if (p <= p') then parens else id) 
+          ((aux t1 False p') <> PP.text " * " <> (aux t2 False p'))
+
+        prec Nat = 0
+        prec Bool = 0
+        prec (Tvar _) = 0
+        prec (Pair _ _) = 1
+        prec (Arrow _ _) = 2
+
+        maxprec = 15
+        
 data TypeScheme = SimpleType Type
                 | ForEach TypeVar TypeScheme
                 deriving (Show, Eq)
@@ -34,7 +45,7 @@ type TypeEnv = [(STerm, TypeScheme)]
 data TypeSubst = Id
                | Sub TypeVar Type
                | Composition TypeSubst TypeSubst
-
+                 deriving Show
 
 -- Binary operators
 data Bop = Plus

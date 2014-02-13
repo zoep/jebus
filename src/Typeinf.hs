@@ -14,6 +14,8 @@ substType (Sub a1 tau) (Tvar a2)
   | otherwise = Tvar a2
 substType (Sub a tau) (Arrow tau1 tau2) =
   Arrow (substType (Sub a tau) tau1) (substType (Sub a tau) tau2)
+substType (Sub a tau) (Pair tau1 tau2) =
+  Pair (substType (Sub a tau) tau1) (substType (Sub a tau) tau2)
 substType (Sub _ _) tau = tau  
 substType (Composition s1 s2) tau =
   substType s1 (substType s2 tau)
@@ -36,6 +38,7 @@ substEnv sub ((term, scheme) : rest) =
 notOccurs :: TypeVar -> Type -> Bool
 notOccurs a1 (Tvar a2) = a1 /= a2
 notOccurs a (Arrow tau1 tau2) = (notOccurs a tau1) && (notOccurs a tau2)
+notOccurs a (Pair tau1 tau2) = (notOccurs a tau1) && (notOccurs a tau2)
 notOccurs a _ = True
 
 unify :: Type -> Type -> Either String TypeSubst 
@@ -55,12 +58,12 @@ unify (Arrow tau11 tau12) (Arrow tau21 tau22) =
   do
     subst1 <- unify tau11 tau21
     subst2 <- unify (substType subst1 tau12) (substType subst1 tau22)
-    return $ Composition subst1 subst2
+    return $ Composition subst2 subst1
 unify (Pair tau11 tau12) (Pair tau21 tau22) =
    do
     subst1 <- unify tau11 tau21
     subst2 <- unify (substType subst1 tau12) (substType subst1 tau22)
-    return $ Composition subst1 subst2 
+    return $ Composition subst2 subst1 
 unify tau1 tau2 =
   Left $ "Could not match type " ++ ppType tau1 ++ " with type " ++ ppType tau2
 
@@ -76,6 +79,9 @@ freeTypeVariables tau = aux tau Set.empty
   where
     aux (Tvar a) set = Set.insert a set
     aux (Arrow tau1 tau2) set =
+      let set' = aux tau1 set in
+      aux tau2 set'
+    aux (Pair tau1 tau2) set =
       let set' = aux tau1 set in
       aux tau2 set'
     aux _ set = set

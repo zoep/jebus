@@ -3,6 +3,7 @@ module Ast where
 import Types
 import qualified Typeinf as T
 import qualified Data.List as List hiding (and)
+import Debug.Trace 
 
 -- useful definitions in terms of lambda calculus
 intToChurch :: Int -> Term
@@ -179,11 +180,12 @@ walk (SApp term1 term2) env p =
     node1 <- walk term1 env p'
     node2 <- walk term2 (T.substEnv (subst node1) env) (pool node1) 
     sub <- T.unify (T.substType (subst node2) (typ node1)) (Arrow (typ node2) (Tvar a))
+    let comp = Composition sub (Composition (subst node2) (subst node1))
     return $ node2 {
       nodeExpr = App (nodeExpr node1) (nodeExpr node2),
       tExpr = TApp (tExpr node1) (tExpr node2),
       typ = T.substType sub (Tvar a),
-      subst = Composition sub (Composition (subst node2) (subst node1))
+      subst = comp
       }
 
 walk (LetIn id term1 term2) env p =
@@ -259,7 +261,7 @@ walk (SPair term1 term2) env p =
     return $ node2 {
       nodeExpr = pair (nodeExpr node1) (nodeExpr node2),
       tExpr = TPair (tExpr node1) (tExpr node2),
-      typ = Pair (typ node1) (typ node2),
+      typ = Pair (T.substType (subst node2) (typ node1)) (typ node2),
       subst = Composition (subst node2) (subst node1)
       }
 

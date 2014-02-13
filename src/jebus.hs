@@ -75,8 +75,8 @@ annotProg p =
         print str
     Right ast ->
       case Ast.infer ast of
-        Left str -> putStrLn str
-        Right node -> putStrLn $ "----------------------------\n" ++
+        Left str -> putStrLn $ "Type error: " ++ str
+        Right node -> putStrLn $ "----------------------------\n" ++ 
                         Types.ppTTerm (Types.tExpr node)  
 
 interProg p eval trace =

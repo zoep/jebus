@@ -93,7 +93,12 @@ e & := e_1 \; e_2 																		                                  & op &:= \
 \frametitle{Type System}
 \begin{block}
 {
-The language is strongly typed featuring the \textbf{Hindley-Milner} type system. The types are implicit in the source (à la Curry) and they are automatically reconstructed using the \textbf{algorithm W} for type inference.
+\begin{itemize}
+\item Strongly typed
+\item Hindley-Milner Type System 
+\item Types are implicit in the source (à la Curry) and they are reconstructed using the algorithm W for type inference
+\end{itemize}
+
 }
 \end{block}
 
@@ -105,9 +110,13 @@ The language is strongly typed featuring the \textbf{Hindley-Milner} type system
 \frametitle{Hindley-Milner typing}
 \begin{block}
 { 
-Hindley-Milner type system is a restriction of system F, featuring let polymorphism. Unlike system F, in which type reconstruction is undecidable, 
-the types can be inferred using the algorithm W.
-\\
+\begin{itemize}
+	\item A restriction of system F	
+	\item Features let polymorphism 
+	\item Extensive use in modern functional programing languages (ML, Haskell, ...)
+	\item Unlike system F, in which type reconstruction is undecidable, 
+	         the types can be inferred using the algorithm W.
+\end{itemize} \medskip
 \textbf{Significant Limitation: }
 Let-polymorphism is rank-1 polymorphism, that means that functions cannot take as arguments polymorphic functions.
 }
@@ -132,7 +141,7 @@ Let-polymorphism is rank-1 polymorphism, that means that functions cannot take a
 			      \textcolor{black}{[const 1 true, const false 42]} \\
 			      \textcolor{black}{-----------------------------} \\
 			      \textcolor{black}{let const : a1 -> a2 -> a1 =} \\
-			      \textcolor{black}{\tab \textbackslash x. : a1. \textbackslash y. : a6 . x}  \\
+			      \textcolor{black}{\tab \textbackslash x. : a1. \textbackslash y. : a2 . x}  \\
 			      \textcolor{black}{in} \\ \relax
 			      \textcolor{black}{\tab [const 1 true, const false 42]}
 			      \end{tabular}	
@@ -149,8 +158,8 @@ Let-polymorphism is rank-1 polymorphism, that means that functions cannot take a
 			      \textcolor{black}{let id = \textbackslash x.  x in}\\ \relax
 			      \textcolor{black}{let f = \textbackslash g. [g 1, g true] in}\\
 			      \textcolor{black}{\tab f id} \\
-			      \textcolor{black}{Could not match type Nat with} \\
-			      \textcolor{black}{type Bool}
+			      \textcolor{black}{Type error: Could not match type } \\
+			      \textcolor{black}{Nat with type Bool}
 				\end{tabular}	
 			  \end{small}			  
 			  \caption{g's type cannot be a polymorphic function!}
@@ -168,6 +177,9 @@ Let-polymorphism is rank-1 polymorphism, that means that functions cannot take a
 \begin{frame}
 \frametitle{Hindley-Milner typing}
 \framesubtitle{Types}
+The type language is layered into two levels, types and type schemes. 
+A type scheme is a type with the possibility of universal quantification of type variables at the outermost.
+
 \begin{block}{We will use $\tau$ for simple types, $\sigma$ for type schemes and $\alpha$ for type variables.}
 \begin{align*}
 \tau & := \tau_1\rightarrow \tau_2  &  \sigma  & := \forall  \alpha. \sigma_1\\
@@ -214,7 +226,8 @@ Let-polymorphism is rank-1 polymorphism, that means that functions cannot take a
 
 \begin{frame}
 \frametitle{The Core Language}
-\begin{block}{The internal representation is actually a pretty small language. Most of the language's expressions are defined as syntactic sugar}
+\begin{block}{
+After the type reconstruction, if a program is well typed and no errors have occured, it is translated in an internal language. This internal representation is actually a pretty small language. Most of the language's expressions are defined as syntactic sugar}
 \begin{align*}
 e & := e_1 \; e_2 	 \\
    & | \; \bs{\lambda} \; id \; \bs{ .} \; e \\
@@ -229,7 +242,7 @@ e & := e_1 \; e_2 	 \\
 \frametitle{The Core Language}
 \framesubtitle{Syntactic Sugar}
 \begin{itemize}
-\item \textbf{Integers} The integers are represented internally with church encoding\\
+\item \textbf{Integers} are represented internally with church encoding\\
 $$n \equiv \lambda \;s.\; \lambda \; z. \; \underbrace{s(s ... (s }_\text{n times} z)..)$$
 \item \textbf{Arithmetical Operations} $e_1 + e_2 \equiv (\lambda \; x. \; \lambda \; y.\; x \; succ \; y) e_1 \; e_2$\\
 $e_1 - e_2 \equiv (\lambda \; x. \; \lambda \; y.\; y \; pred \; x) e_1 \; e_2$ \\
@@ -347,8 +360,8 @@ Both strategies evaluate the body of an unapplied  function.
 \frac{e\;\rightarrow\;e'}{fix \; e \rightarrow fix \; e'} \\[0.3cm]
 \end{gather*}
 
-Note that $e[fix \; \lambda \; x. e/x] \equiv_\beta (\lambda\; x. e) \; (fix \; \lambda \; x. e) \equiv fix \; \lambda \; x. e$ ,
-just like $f \;(Y\; f) \equiv Y \; f$.
+Note that $fix \; \lambda \; x. e \equiv e[fix \; \lambda \; x. e/x] \equiv_\beta (\lambda\; x. e) \; (fix \; \lambda \; x. e)$ ,
+just like $Y \; f \; \equiv f \;(Y\; f)$.
 \end{block}
 \end{frame}
 
@@ -379,6 +392,18 @@ just like $f \;(Y\; f) \equiv Y \; f$.
 
 \end{frame}
 
+
+\begin{frame}
+\frametitle{Alpha Conversion}
+\framesubtitle{Avoid Capturing}
+\begin{block}{Problem}
+If we try to evaluate the term $\lambda \; x. \; (\lambda \;y. \; \lambda \;x. \; y \; x) \; x$ using any of the above strategies then the resulting term is $\lambda \; x. \; (\lambda \;x. \; x \; x)$. This is obviously wrong as the first occurrence of x must be binded by the first abstraction.
+\end{block}
+\begin{block}{Solution}
+Perform alpha renaming when needed. In other words before making a substitution of the form 
+$(\lambda \; x. \;e_1)[e_2/y]$ check if $x$ occurs free in the term $e_2$. If so, rename the binder x and all the  occurrences of x that are binded by this abstraction with a \textbf{fresh} variable name. The variable name needs to be fresh so the abstraction does not capture any other free variables in $e_1$.
+\end{block}
+\end{frame}
 
 \begin{frame}
 \frametitle{Evaluation Strategies}
@@ -462,7 +487,7 @@ will be evaluated.
 				  \textcolor{black}{$\ldots$} \\
 			      \textcolor{black}{$\ldots$ =>} \\
 			      \textcolor{black}{\textbackslash f . \textbackslash x . f (f (f x))} \\
-			      \textcolor{black}{Performed 14 beta reductions.} \\
+			      \textcolor{black}{Performed 15 beta reductions.} \\
 			      \end{tabular}	
 			  \end{footnotesize}			  
 			  \caption{Evaluate ite.lam with applicative order strategy. 15 beta reductions needed.}
@@ -555,11 +580,11 @@ jebus eval [OPTIONS] &\\
 {
 \begin{footnotesize}
 \begin{itemize}
-\item \href{http://www.math.ntua.gr/logic/lambda/notes/shmeiwseis-2011.pdf}{Notes} form NTUA's Applications of Logic in Computer Science course %
+\item \href{http://www.math.ntua.gr/logic/lamdba/notes/shmeiwseis-2011.pdf}{Notes} form NTUA's Applications of Logic in Computer Science course %
 \item \href{http://homepage.cs.uiowa.edu/~slonnegr/plf/Book/Chapter5.pdf}{Chapter 5} from the book Formal Syntax and Semantics of Programming Languages, Kenneth Slonneger, Barry L. Kurtz
 \item \href{http://www.cs.uu.nl/wiki/pub/Cco/CourseSchedule/cco-09-typesystems-2x2.pdf}{Hindley-Milner Typing and Algorithm W} from Compiler Construction course notes, Utrech University %
-\item \href{http://lambda.jimpryor.net/lambda_library/}{lambda library} from NYU Lambda Seminar %
-\item \href{http://homes.cs.washington.edu/~djg/2011sp/lec11_6up.pdf}{Simply typed lambda calculus extensions} from Programming Languages course notes, University of Washington %
+\item \href{http://lamdba.jimpryor.net/lamdba_library/}{lamdba library} from NYU lamdba Seminar %
+\item \href{http://homes.cs.washington.edu/~djg/2011sp/lec11_6up.pdf}{Simply typed lamdba calculus extensions} from Programming Languages course notes, University of Washington %
 \end{itemize}
 \end{footnotesize}
 }
